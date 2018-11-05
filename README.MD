@@ -10,6 +10,7 @@ A PDF version of the presentation we gave at the end of the course is available 
 
 * Aleksei Semin
 * Jan Svoboda
+* Ridvan Acilan
 
 ## Installation
 
