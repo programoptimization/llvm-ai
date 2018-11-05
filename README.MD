@@ -9,6 +9,7 @@ A PDF version of the presentation we gave at the end of the course is available 
 ## Authors (in alphabetic order)
 
 * Aleksei Semin
+* Jan Svoboda
 
 ## Installation
 
