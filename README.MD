@@ -19,8 +19,7 @@ A PDF version of the presentation we gave at the end of the course is available 
 Clone the project into the following folder:
 ```bash
 cd llvm/lib/Transforms
-git clone git@github.com:peterrum/po-lab-2018.git
-mv po-lab-2018 ValueSetAnalysis
+git clone git@github.com:peterrum/po-lab-2018.git ValueSetAnalysis
 ```
 
 and add the following line to the `CMakeLists.txt`-file:
