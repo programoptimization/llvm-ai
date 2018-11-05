@@ -210,8 +210,14 @@ void VsaVisitor::visitSwitchInst(SwitchInst &I) {
 }
 
 void VsaVisitor::visitLoadInst(LoadInst &I) {
-  // not strictly necessary (non-present vars are T ) but good for clearity
-  newState.put(I, AD_TYPE::create_top(I.getType()->getIntegerBitWidth()));
+  // Crash fix: The LoadInst can load a pointer too so that getIntegerBitWidth
+  //            crashes if assertions are enabled. Mainly encountered on
+  //            Windows where clang yields different output when compiling
+  //            with the MSVC standard library.
+  if (isa<IntegerType>(I.getType())) {
+    // not strictly necessary (non-present vars are T ) but good for clearity
+    newState.put(I, AD_TYPE::create_top(I.getType()->getIntegerBitWidth()));
+  }
 }
 
 void VsaVisitor::visitPHINode(PHINode &I) {
