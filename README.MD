@@ -8,11 +8,7 @@ A PDF version of the presentation we gave at the end of the course is available 
 
 ## Authors (in alphabetic order)
 
-* Julian Erhard
-* Jakob Gottfriedsen
-* Peter Munch
-* Alexander Roschlaub
-* Michael B. Schwarz
+* Aleksei Semin
 
 ## Installation
 
