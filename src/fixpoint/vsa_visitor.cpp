@@ -280,6 +280,11 @@ void VsaVisitor::visitPHINode(PHINode &I) {
   newState.put(I, bs);
 }
 
+void VsaVisitor::visitCallInst(CallInst &I)
+{
+  I.dump();
+}
+
 void VsaVisitor::visitAdd(BinaryOperator &I) {
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));

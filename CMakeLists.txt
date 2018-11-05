@@ -13,6 +13,8 @@ endif()
 if (NOT VSA_STATIC)
 add_llvm_loadable_module( llvm-vsa
   src/vsa.cpp
+  src/CallStringPass.h
+  src/CallStringPass.cpp
   src/abstract_domain/BoundedSet.cpp
   src/abstract_domain/StridedInterval.cpp
   src/abstract_domain/CompositeDomain.cpp
@@ -33,6 +35,8 @@ add_llvm_loadable_module( llvm-vsa
   )
 else()
 add_llvm_library(LLVMValueSetAnalysis
+  src/CallStringPass.h
+  src/CallStringPass.cpp
   src/VSAPass.cpp
   src/vsa.cpp
   src/abstract_domain/BoundedSet.cpp

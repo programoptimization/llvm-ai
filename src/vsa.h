@@ -52,6 +52,7 @@ public:
       return false;
 
     programPoints.clear();
+    // getAnalysis<DominatorTreeWrapperPass>().getDomTree().viewGraph();
     VsaVisitor vis(worklist,
             getAnalysis<DominatorTreeWrapperPass>().getDomTree(),programPoints);
 
@@ -60,7 +61,7 @@ public:
 
     int visits = 0;
 
-    std::map<std::string, std::vector<int>> trance;
+    std::map<std::string, std::vector<int /*visits*/>> trance;
     for (auto &bb : function)
       trance[std::string(bb.getName())].clear();
 

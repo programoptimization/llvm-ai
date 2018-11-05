@@ -64,7 +64,7 @@ public:
   void visitExtractValueInst(ExtractValueInst &I);*/
 
   /// Call and Invoke
-  // void visitCallInst(CallInst &I);
+  void visitCallInst(CallInst &I);
   // void visitInvokeInst(InvokeInst &I);
 
   /// BinaryOperators
