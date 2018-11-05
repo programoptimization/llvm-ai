@@ -1,0 +1,85 @@
+diff --git a/include/llvm/InitializePasses.h b/include/llvm/InitializePasses.h
+index d67b1d48f27..42b4d67cd59 100644
+--- a/include/llvm/InitializePasses.h
++++ b/include/llvm/InitializePasses.h
+@@ -61,6 +61,9 @@ void initializeGlobalISel(PassRegistry&);
+ /// Initialize all passes linked into the CodeGen library.
+ void initializeTarget(PassRegistry&);
+ 
++/// Initialize all passes linked into the ValueSetAnalysis library.
++void initializeValueSetAnalysis(PassRegistry&);
++
+ void initializeAAEvalLegacyPassPass(PassRegistry&);
+ void initializeAAResultsWrapperPassPass(PassRegistry&);
+ void initializeADCELegacyPassPass(PassRegistry&);
+@@ -400,7 +403,6 @@ void initializeWinEHPreparePass(PassRegistry&);
+ void initializeWriteBitcodePassPass(PassRegistry&);
+ void initializeWriteThinLTOBitcodePass(PassRegistry&);
+ void initializeXRayInstrumentationPass(PassRegistry&);
+-
+ } // end namespace llvm
+ 
+ #endif // LLVM_INITIALIZEPASSES_H
+diff --git a/include/llvm/LinkAllPasses.h b/include/llvm/LinkAllPasses.h
+index bd432c58b61..8a6c1726714 100644
+--- a/include/llvm/LinkAllPasses.h
++++ b/include/llvm/LinkAllPasses.h
+@@ -56,6 +56,8 @@
+ #include "llvm/Transforms/Vectorize.h"
+ #include <cstdlib>
+ 
++llvm::Pass* createValueSetAnalysisPass();
++
+ namespace {
+   struct ForcePassLinking {
+     ForcePassLinking() {
+@@ -219,6 +221,8 @@ namespace {
+       (void) llvm::createEliminateAvailableExternallyPass();
+       (void) llvm::createScalarizeMaskedMemIntrinPass();
+ 
++      (void) createValueSetAnalysisPass();
++
+       (void)new llvm::IntervalPartition();
+       (void)new llvm::ScalarEvolutionWrapperPass();
+       llvm::Function::Create(nullptr, llvm::GlobalValue::ExternalLinkage)->viewCFGOnly();
+diff --git a/lib/Transforms/CMakeLists.txt b/lib/Transforms/CMakeLists.txt
+index 74db9e53304..7e00e8fc2dc 100644
+--- a/lib/Transforms/CMakeLists.txt
++++ b/lib/Transforms/CMakeLists.txt
+@@ -8,3 +8,6 @@ add_subdirectory(Vectorize)
+ add_subdirectory(Hello)
+ add_subdirectory(ObjCARC)
+ add_subdirectory(Coroutines)
++add_subdirectory(ValueSetAnalysis)
++# add_subdirectory(ValueSetAnalysis/tutorial)
++# add_subdirectory(ValueSetAnalysis/benchmark)
+diff --git a/tools/opt/CMakeLists.txt b/tools/opt/CMakeLists.txt
+index f03d1151665..8586e695503 100644
+--- a/tools/opt/CMakeLists.txt
++++ b/tools/opt/CMakeLists.txt
+@@ -20,6 +20,13 @@ set(LLVM_LINK_COMPONENTS
+   Passes
+   )
+ 
++if (VSA_STATIC)
++  set(LLVM_LINK_COMPONENTS
++    ${LLVM_LINK_COMPONENTS}
++    ValueSetAnalysis
++    )
++endif()
++
+ # Support plugins.
+ set(LLVM_NO_DEAD_STRIP 1)
+ 
+diff --git a/tools/opt/opt.cpp b/tools/opt/opt.cpp
+index 6e287b6c0ab..d8932d2c101 100644
+--- a/tools/opt/opt.cpp
++++ b/tools/opt/opt.cpp
+@@ -449,6 +449,7 @@ int main(int argc, char **argv) {
+   initializeAggressiveInstCombine(Registry);
+   initializeInstrumentation(Registry);
+   initializeTarget(Registry);
++  initializeValueSetAnalysis(Registry);
+   // For codegen passes, only passes that do IR to IR transformation are
+   // supported.
+   initializeExpandMemCmpPassPass(Registry);

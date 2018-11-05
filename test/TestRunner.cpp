@@ -37,5 +37,7 @@ struct Hello : public FunctionPass {
 };
 } // namespace
 
+#ifndef VSA_STATIC
 char Hello::ID = 0;
 static RegisterPass<Hello> X("testBS", "Hello World Pass");
+#endif // VSA_STATIC

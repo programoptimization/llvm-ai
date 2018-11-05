@@ -1170,7 +1170,7 @@ StridedInterval::leastUpperBound(AbstractDomain &other) {
     return smaller.normalize();
   }
 
-  if (d_.ult(c_) and c_.ule(b_)) {
+  if (d_.ult(c_) && c_.ule(b_)) {
     // two overlapping regions
     APInt distanceFromStartOfA = c_.ule(d_) ? c_ : d_;
     // to ensure that the stride behaves well for wraparounds

@@ -13,5 +13,7 @@
 
 #define DEBUG_TYPE "hello"
 
+#ifndef VSA_STATIC
 static RegisterPass<VsaPass> Y("vsapass",
                                "VSA Pass (with getAnalysisUsage implemented)");
+#endif // VSA_STATIC
