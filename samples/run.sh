@@ -14,10 +14,18 @@ while :; do
 done
 
 if [ "$flag1" = "TEST" ]; then
-    EXE=llvm-vsa-tutorial.so
+    EXE=llvm-vsa-tutorial.dylib
     PASS=vsatutorialpass
 else
-    EXE=llvm-vsa.so
+	if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        EXE=llvm-vsa.so
+	elif [[ "$OSTYPE" == "darwin"* ]]; then
+        EXE=llvm-vsa.dylib
+	elif [[ "$OSTYPE" == "win32" ]]; then
+        echo "https://www.wikihow.com/Install-Linux"
+	else
+        echo "Unknown OS check run.sh:21"
+	fi
     PASS=vsapass
 fi
 
