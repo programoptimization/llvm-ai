@@ -1324,8 +1324,28 @@ bool StridedInterval::isTop() const {
   }
 }
 
-shared_ptr<AbstractDomain> StridedInterval::widen() {
-  /// This is where we should look at smarter ways to do this...
+shared_ptr<AbstractDomain> StridedInterval::widen(AbstractDomain &other) {
+  // This is where we should look at smarter ways to do this...
+
+  //check wich direction expandes
+    enum wideningDirection{ up, down, both, none };
+    auto wideningDirection1 = none;
+
+    //check in which direction it became bigger
+    if(other.getUMax().ugt(getUMax())){
+        wideningDirection1 = down;
+    }
+    if(other.getUMin().ugt(getUMin())){
+        //enlarge on bottom
+        if(wideningDirection1 == down){
+            wideningDirection1 = both;
+        }else{
+            wideningDirection1 = up;
+        }
+    }
+
+  //join
+
   return create_top(bitWidth);
 }
 

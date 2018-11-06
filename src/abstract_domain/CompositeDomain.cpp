@@ -243,8 +243,8 @@ CompositeDomain::icmp(CmpInst::Predicate pred, unsigned numBits,
               );
 }
 
-shared_ptr<AbstractDomain> CompositeDomain::widen() {
-  return delegate->widen();
+shared_ptr<AbstractDomain> CompositeDomain::widen(AbstractDomain &other) {
+  return delegate->widen(other);
 }
 
 bool CompositeDomain::requiresWidening() {
