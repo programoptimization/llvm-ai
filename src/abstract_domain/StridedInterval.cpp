@@ -1351,7 +1351,7 @@ shared_ptr<AbstractDomain> StridedInterval::widen(AbstractDomain &other) {
    * if the sizeIncrease is bigger than half of the available int the interval is set to top
    */
   APInt sizeIncrease = ret->getUMax() - ret->getUMin();
-  if (wideningDir == none){
+  if (wideningDir == none || ret->getDomainType() != stridedInterval){
     return ret;
   }else{
     APInt bound = APInt(sizeIncrease.getBitWidth(), 1);
@@ -1359,23 +1359,27 @@ shared_ptr<AbstractDomain> StridedInterval::widen(AbstractDomain &other) {
       case up:
         bound = bound.shl(sizeIncrease.getBitWidth()-1);
         if(sizeIncrease.ult(bound)){
-          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeIncrease.getBitWidth())); //top
+            return StridedInterval::create_top(sizeIncrease.getBitWidth());
         }
-        //TODO enlarge on upper side
+        //enlarge top
+        static_cast<StridedInterval *>(ret.get())->end = static_cast<StridedInterval *>(ret.get())->end + sizeIncrease;
         break;
       case down:
         bound = bound.shl(sizeIncrease.getBitWidth()-1);
         if(sizeIncrease.ult(bound)){
-          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeIncrease.getBitWidth())); //top
+            return StridedInterval::create_top(sizeIncrease.getBitWidth());
         }
-        //TODO enlarge on lower side
+        //enlarge top
+        static_cast<StridedInterval *>(ret.get())->begin = static_cast<StridedInterval *>(ret.get())->begin - sizeIncrease;
         break;
       case both:
         bound = bound.shl(sizeIncrease.getBitWidth()-2);
         if(sizeIncrease.ult(bound)){
-          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeIncrease.getBitWidth())); //top
+            return StridedInterval::create_top(sizeIncrease.getBitWidth());
         }
-        //TODO enlarge on upper & lower side
+        //enlarge top & bottom by half size
+        static_cast<StridedInterval *>(ret.get())->end = static_cast<StridedInterval *>(ret.get())->end + sizeIncrease.lshr(1);
+        static_cast<StridedInterval *>(ret.get())->begin = static_cast<StridedInterval *>(ret.get())->begin - sizeIncrease.lshr(1);
         break;
     }
   }
