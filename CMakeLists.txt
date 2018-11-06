@@ -48,7 +48,9 @@ add_llvm_library(LLVMValueSetAnalysis
   src/fixpoint/vsa_visitor.cpp
   src/fixpoint/worklist.cpp
   src/fixpoint/branch_conditions.cpp
+  src/api/vsa_result.h
   src/api/vsa_result.cpp
+  src/api/vsa_result_value.h
   src/api/vsa_result_value.cpp
   test/BoundedSetTest.cpp
   test/StridedIntervalTest.cpp

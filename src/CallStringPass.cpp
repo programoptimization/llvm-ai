@@ -2,7 +2,14 @@
 #include "CallStringPass.h"
 #include "fixpoint/vsa_visitor.h"
 #include "vsa.h"
+#include "fixpoint/vsa_visitor.h"
 #include <llvm/IR/Module.h>
+
+template <>
+class CallStringVisitorTraits<VsaVisitor>
+{
+  void inject(VsaVisitor& visitor);
+};
 
 bool CallStringPass::runOnModule(llvm::Module &module) {
   for (auto &&functions : module) {

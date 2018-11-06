@@ -7,6 +7,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/InstVisitor.h>
 #include <llvm/Pass.h>
+#include <llvm/ADT/iterator_range.h>
 #include <llvm/Support/raw_ostream.h>
 #include <map>
 #include <utility>
@@ -26,6 +27,9 @@ struct ReturnSet {};
 using WhatWeWant = std::map<CallString, ReturnSet>;
 
 template <typename SubVisitor>
+class CallStringVisitorTraits;
+
+template <typename SubVisitor>
 class CallStringVisitor
     : public llvm::InstVisitor<CallStringVisitor<SubVisitor>, void> {
 
@@ -39,6 +43,11 @@ public:
 
   void visitCallInst(llvm::CallInst &I) {
     // Implement this later
+
+    for (auto&& arg : llvm::make_range(I.arg_begin(), I.arg_end()))
+    {
+      // arg.get()->
+    }
   }
 
   // TODO Implement this later when exceptions are supported
