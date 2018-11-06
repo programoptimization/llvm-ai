@@ -21,11 +21,27 @@ bool State::put(Value &v, std::shared_ptr<AbstractDomain> ad) {
     if (*ad<=(*vars[&v])) {
       return false;
     }
+    enum wideningDirection{ up, down, both, none };
+    auto wideningDirection1 = none;
 
-    vars[&v] = vars[&v]->leastUpperBound(*ad);
+    //check in which direction it became bigger
+    if(ad->getUMax().ugt(vars[&v]->getUMax())){
+        wideningDirection1 = down;
+    }
+    if(ad->getUMin().ugt(vars[&v]->getUMin())){
+        //enlarge on bottom
+        if(wideningDirection1 == down){
+            wideningDirection1 = both;
+        }else{
+            wideningDirection1 = up;
+        }
+    }
+
+    vars[&v] = vars[&v]->leastUpperBound(*ad); //join
 
     if(vars[&v]->requiresWidening()) {
       if(changeCounts[&v] > WIDENING_AFTER) {
+
           vars[&v] = vars[&v]->widen();
       }
       changeCounts[&v]++;
