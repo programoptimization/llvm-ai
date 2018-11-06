@@ -21,17 +21,17 @@ bool State::put(Value &v, std::shared_ptr<AbstractDomain> ad) {
     if (*ad<=(*vars[&v])) {
       return false;
     }
-    if(vars[&v]->requiresWidening() && changeCounts[&v] > WIDENING_AFTER){
+    if(vars[&v]->requiresWidening() && accessCounts[&v] > WIDENING_AFTER){
         //widen
         vars[&v] = vars[&v]->widen(*ad);
     }else{
         //join
         vars[&v] = vars[&v]->leastUpperBound(*ad);
     }
-    changeCounts[&v]++;
+    accessCounts[&v]++;
   } else {
     vars[&v] = ad;
-    changeCounts[&v] = 0;
+    accessCounts[&v] = 0;
   }
 
   return true;
@@ -116,10 +116,10 @@ bool State::copyState(State &other) {
 
   /// copy map
   vars.clear();
-  changeCounts.clear();
+  accessCounts.clear();
   for (auto &var : other.vars) {
     vars[var.first] = var.second;
-    changeCounts[var.first] = 0;
+    accessCounts[var.first] = 0;
   }
 
   return bottom;

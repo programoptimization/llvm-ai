@@ -779,7 +779,7 @@ StridedInterval::subsetsForPredicateEQ(StridedInterval &A, StridedInterval &B) {
   shared_ptr<AbstractDomain> trueSet;
 
   if (B.size() == 1) {
-    // In case B == {x}, we can exclude x from A in the false branch 
+    // In case B == {x}, we can exclude x from A in the false branch
 
     // The set in the false branch thus is the intersection of A with the complement of B
     StridedInterval bComplement(B.begin + 1, B.begin - 1, APInt(B.bitWidth, 1));
@@ -902,7 +902,7 @@ shared_ptr<AbstractDomain> StridedInterval::intersect(const StridedInterval &fir
     } else {
       return create_bottom(A.bitWidth);
     }
-  } 
+  }
 
   if(B.realSize() == 1){
     if(A.contains(B.begin)){
@@ -910,7 +910,7 @@ shared_ptr<AbstractDomain> StridedInterval::intersect(const StridedInterval &fir
     } else {
       return create_bottom(A.bitWidth);
     }
-  } 
+  }
 
   // We do a case distinction on the kind of intervals
   // Case 1: both aren't wrap around
@@ -1325,28 +1325,57 @@ bool StridedInterval::isTop() const {
 }
 
 shared_ptr<AbstractDomain> StridedInterval::widen(AbstractDomain &other) {
-  // This is where we should look at smarter ways to do this...
-
-  //check wich direction expandes
-    enum wideningDirection{ up, down, both, none };
-    auto wideningDirection1 = none;
-
-    //check in which direction it became bigger
-    if(other.getUMax().ugt(getUMax())){
-        wideningDirection1 = down;
-    }
-    if(other.getUMin().ugt(getUMin())){
-        //enlarge on bottom
-        if(wideningDirection1 == down){
-            wideningDirection1 = both;
-        }else{
-            wideningDirection1 = up;
-        }
-    }
-
   //join
+  shared_ptr<AbstractDomain> ret = leastUpperBound(other);
 
-  return create_top(bitWidth);
+  if(ret->isBottom() || ret->isTop()){
+    return ret;
+  }
+  //check wich direction expands
+  enum wideningDirection{ up, down, both, none };
+  auto wideningDirection1 = none;
+  if(ret->getUMax() != getUMax()){
+    wideningDirection1 = up;
+  }
+  if(ret->getUMin() != getUMin()){
+    if(wideningDirection1 == up){
+      wideningDirection1 = both;
+    }else{
+      wideningDirection1 = down;
+    }
+  }
+
+  //widen
+  APInt sizeincrease = ret->getUMax() - ret->getUMin();
+  if (wideningDirection1 == none){
+    return ret;
+  }else{
+    APInt bound = APInt(sizeincrease.getBitWidth(), 1);
+    switch (wideningDirection1){
+      case up:
+        bound = bound.shl(sizeincrease.getBitWidth()-1);
+        if(sizeincrease.ult(bound)){
+          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeincrease.getBitWidth())); //top
+        }
+        //TODO enlarge on upper side
+        break;
+      case down:
+        bound = bound.shl(sizeincrease.getBitWidth()-1);
+        if(sizeincrease.ult(bound)){
+          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeincrease.getBitWidth())); //top
+        }
+        //TODO enlarge on lower side
+        break;
+      case both:
+        bound = bound.shl(sizeincrease.getBitWidth()-2);
+        if(sizeincrease.ult(bound)){
+          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeincrease.getBitWidth())); //top
+        }
+        //TODO enlarge on upper & lower side
+        break;
+    }
+  }
+  return ret;
 }
 
 bool StridedInterval::requiresWidening() {
