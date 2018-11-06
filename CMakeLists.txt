@@ -38,11 +38,13 @@ add_llvm_library(LLVMValueSetAnalysis
   src/CallStringPass.h
   src/CallStringPass.cpp
   src/VSAPass.cpp
+  src/vsa.h
   src/vsa.cpp
   src/abstract_domain/BoundedSet.cpp
   src/abstract_domain/StridedInterval.cpp
   src/abstract_domain/CompositeDomain.cpp
   src/fixpoint/state.cpp
+  src/fixpoint/vsa_visitor.h
   src/fixpoint/vsa_visitor.cpp
   src/fixpoint/worklist.cpp
   src/fixpoint/branch_conditions.cpp
@@ -60,4 +62,4 @@ add_llvm_library(LLVMValueSetAnalysis
   )
 
 target_compile_definitions(LLVMValueSetAnalysis PRIVATE VSA_STATIC)
-endif()  
+endif()

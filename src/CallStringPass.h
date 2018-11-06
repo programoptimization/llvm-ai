@@ -2,10 +2,54 @@
 #ifndef CALL_STRING_PASS_H_
 #define CALL_STRING_PASS_H_
 
-#include "llvm/ADT/Statistic.h"
-#include "llvm/IR/Function.h"
-#include "llvm/Pass.h"
-#include "llvm/Support/raw_ostream.h"
+#include <llvm/ADT/Statistic.h>
+#include <llvm/IR/CallSite.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/InstVisitor.h>
+#include <llvm/Pass.h>
+#include <llvm/Support/raw_ostream.h>
+#include <map>
+#include <utility>
+#include <vector>
+
+using CallSites = std::vector<llvm::CallInst *>;
+
+struct ArgumentSet {};
+
+struct CallString {
+  CallSites sites_;
+  ArgumentSet set_;
+};
+
+struct ReturnSet {};
+
+using WhatWeWant = std::map<CallString, ReturnSet>;
+
+template <typename SubVisitor>
+class CallStringVisitor
+    : public llvm::InstVisitor<CallStringVisitor<SubVisitor>, void> {
+
+  static_assert(
+      std::is_base_of<llvm::InstVisitor<SubVisitor, void>, SubVisitor>::value,
+      "The Visitor needs to inherit from llvm::InstVisitor!");
+
+public:
+  explicit CallStringVisitor(SubVisitor sub_visitor)
+      : sub_visitor_(std::move(sub_visitor)) {}
+
+  void visitCallInst(llvm::CallInst &I) {
+    // Implement this later
+  }
+
+  // TODO Implement this later when exceptions are supported
+  // void visitInvokeInst(llvm::InvokeInst &I);
+
+  /// default
+  void visitInstruction(llvm::Instruction &I) { sub_visitor_.visit(I); }
+
+private:
+  SubVisitor sub_visitor_;
+};
 
 class CallStringPass : public llvm::ModulePass {
 public:

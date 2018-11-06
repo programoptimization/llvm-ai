@@ -1,10 +1,16 @@
 
 #include "CallStringPass.h"
+#include "fixpoint/vsa_visitor.h"
+#include "vsa.h"
+#include <llvm/IR/Module.h>
 
-bool CallStringPass::runOnModule(llvm::Module &function)
-{
-    // Our analysis does not change the IR
-    return false;
+bool CallStringPass::runOnModule(llvm::Module &module) {
+  for (auto &&functions : module) {
+    // ..
+  }
+
+  // Our analysis does not change the IR
+  return false;
 }
 
 void CallStringPass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {}
@@ -12,6 +18,6 @@ void CallStringPass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {}
 char CallStringPass::ID = 0;
 
 #ifndef VSA_STATIC
-static RegisterPass<CallStringPass> Y("csapass",
-                               "CSA Pass (with getAnalysisUsage implemented)");
+static RegisterPass<CallStringPass>
+    Y("csapass", "CSA Pass (with getAnalysisUsage implemented)");
 #endif // VSA_STATIC

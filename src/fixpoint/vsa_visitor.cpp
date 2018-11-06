@@ -282,6 +282,7 @@ void VsaVisitor::visitPHINode(PHINode &I) {
 
 void VsaVisitor::visitCallInst(CallInst &I)
 {
+  // ImmutableCallSite s(&I);
   I.dump();
 }
 
