@@ -1331,45 +1331,49 @@ shared_ptr<AbstractDomain> StridedInterval::widen(AbstractDomain &other) {
   if(ret->isBottom() || ret->isTop()){
     return ret;
   }
-  //check wich direction expands
+  //check which direction expands
   enum wideningDirection{ up, down, both, none };
-  auto wideningDirection1 = none;
+  auto wideningDir = none;
   if(ret->getUMax() != getUMax()){
-    wideningDirection1 = up;
+    wideningDir = up;
   }
   if(ret->getUMin() != getUMin()){
-    if(wideningDirection1 == up){
-      wideningDirection1 = both;
+    if(wideningDir == up){
+      wideningDir = both;
     }else{
-      wideningDirection1 = down;
+      wideningDir = down;
     }
   }
 
   //widen
-  APInt sizeincrease = ret->getUMax() - ret->getUMin();
-  if (wideningDirection1 == none){
+  /*
+   * every time widening happens the interval doubles in size
+   * if the sizeIncrease is bigger than half of the available int the interval is set to top
+   */
+  APInt sizeIncrease = ret->getUMax() - ret->getUMin();
+  if (wideningDir == none){
     return ret;
   }else{
-    APInt bound = APInt(sizeincrease.getBitWidth(), 1);
-    switch (wideningDirection1){
+    APInt bound = APInt(sizeIncrease.getBitWidth(), 1);
+    switch (wideningDir){
       case up:
-        bound = bound.shl(sizeincrease.getBitWidth()-1);
-        if(sizeincrease.ult(bound)){
-          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeincrease.getBitWidth())); //top
+        bound = bound.shl(sizeIncrease.getBitWidth()-1);
+        if(sizeIncrease.ult(bound)){
+          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeIncrease.getBitWidth())); //top
         }
         //TODO enlarge on upper side
         break;
       case down:
-        bound = bound.shl(sizeincrease.getBitWidth()-1);
-        if(sizeincrease.ult(bound)){
-          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeincrease.getBitWidth())); //top
+        bound = bound.shl(sizeIncrease.getBitWidth()-1);
+        if(sizeIncrease.ult(bound)){
+          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeIncrease.getBitWidth())); //top
         }
         //TODO enlarge on lower side
         break;
       case both:
-        bound = bound.shl(sizeincrease.getBitWidth()-2);
-        if(sizeincrease.ult(bound)){
-          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeincrease.getBitWidth())); //top
+        bound = bound.shl(sizeIncrease.getBitWidth()-2);
+        if(sizeIncrease.ult(bound)){
+          return std::make_shared<AbstractDomain>(StridedInterval(true, sizeIncrease.getBitWidth())); //top
         }
         //TODO enlarge on upper & lower side
         break;

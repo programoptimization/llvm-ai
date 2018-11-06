@@ -28,6 +28,7 @@ bool State::put(Value &v, std::shared_ptr<AbstractDomain> ad) {
         //join
         vars[&v] = vars[&v]->leastUpperBound(*ad);
     }
+    //TODO only count if vars are actually changed
     accessCounts[&v]++;
   } else {
     vars[&v] = ad;
