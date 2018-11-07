@@ -267,8 +267,6 @@ CompositeDomain::leastUpperBound(AbstractDomain &other) {
 
 bool CompositeDomain::operator<=(AbstractDomain &other) {
   CompositeDomain &otherD = *static_cast<CompositeDomain *>(&other);
-  // TODO: Implement lessOrEqual for both BoundedSet and StridedInterval in
-  // these classes
   //return delegate->lessOrEqual(*otherD.delegate.get());
   if (getDelegateType() == stridedInterval && otherD.getDelegateType() == boundedSet) {
       BoundedSet otherBs = *static_cast<BoundedSet *>(otherD.delegate.get());
