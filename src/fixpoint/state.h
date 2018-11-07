@@ -59,7 +59,7 @@ private:
 
   /// How often has this value been updated (needed for widening)
   /// zero if AD currenly used for this value does not use widening
-  std::map<Value *, int> accessCounts;
+  std::map<Value *, int> changeCounts;
 
   bool bottom;
 };
