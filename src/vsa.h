@@ -4,6 +4,7 @@
 #include "api/vsa_result.h"
 #include "fixpoint/vsa_visitor.h"
 #include "fixpoint/worklist.h"
+#include "interprocedural/CallHierarchy.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
@@ -26,16 +27,17 @@ struct VsaPass : public ModulePass {
   // worklist: instructions are handled in a FIFO manner
   WorkList worklist;
 
-  // map of programPoints
-  std::map<BasicBlock *, State> programPoints;
+  struct LocalData {
+    // map of programPoints
+    std::map<BasicBlock *, State> programPoints;
+    VsaResult result;
+  };
 
-private:
-  VsaResult result;
+  CallHierarchy<LocalData> hierarchy_;
+
 public:
-
   VsaPass(bool do_print = false)
-      : ModulePass(ID), do_print(do_print), worklist(),
-        result(programPoints) {}
+      : ModulePass(ID), do_print(do_print), worklist(), result(programPoints) {}
 
   bool doInitialization(Module &m) override {
     return ModulePass::doInitialization(m);
@@ -59,7 +61,8 @@ public:
     programPoints.clear();
     // getAnalysis<DominatorTreeWrapperPass>().getDomTree().viewGraph();
     VsaVisitor vis(worklist,
-            getAnalysis<DominatorTreeWrapperPass>().getDomTree(),programPoints);
+                   getAnalysis<DominatorTreeWrapperPass>().getDomTree(),
+                   programPoints);
 
     /// get the first basic block and push it into the worklist
     worklist.push(&current_function->front());
@@ -120,12 +123,10 @@ public:
     AU.addRequired<DominatorTreeWrapperPass>();
   }
 
-  VsaResult& getResult(){
-      return result;
-  }
+  VsaResult &getResult() { return result; }
 };
 
 char VsaPass::ID = 0;
-}
+} // namespace
 
 #endif

@@ -11,8 +11,10 @@ if(WIN32 OR CYGWIN)
 endif()
 
 set(VSA_SOURCES
-src/ReturnDomainJoin.h
-src/ReturnDomainJoin.cpp
+src/interprocedural/ReturnDomainJoin.h
+src/interprocedural/ReturnDomainJoin.cpp
+src/interprocedural/CallHierarchy.h
+src/interprocedural/CallHierarchy.cpp
 src/CallStringPass.h
 src/CallStringPass.cpp
 src/vsa.h

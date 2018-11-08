@@ -1,0 +1,57 @@
+
+#include "ReturnDomainJoin.h"
+#include "abstract_domain/AbstractDomain.h"
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/InstVisitor.h>
+
+using namespace llvm;
+using namespace pcpo;
+
+namespace {
+class ReturnDomainVisitor : public InstVisitor<ReturnDomainVisitor, void> {
+
+  std::map<BasicBlock *, State> const &program_points_;
+  BasicBlock *current_block_;
+  shared_ptr<AbstractDomain> &return_domain_;
+
+public:
+  explicit ReturnDomainVisitor(
+      std::map<BasicBlock *, State> const &program_points,
+      BasicBlock *current_block, shared_ptr<AbstractDomain> &return_domain)
+      : program_points_(program_points), current_block_(current_block),
+        return_domain_(return_domain) {}
+
+  void visitReturnInst(llvm::ReturnInst &I) {
+    auto const state = program_points_.find(current_block_);
+    if (state == program_points_.end()) {
+      llvm_unreachable("The ReturnInst is required to have a present domain!");
+    }
+
+    shared_ptr<AbstractDomain> current = state->second.getAbstractValue(&I);
+
+    if (return_domain_) {
+      return_domain_->leastUpperBound(*current);
+    } else {
+      return_domain_ = current;
+    }
+  }
+};
+} // namespace
+
+std::shared_ptr<AbstractDomain>
+joinReturnDomain(std::map<BasicBlock *, State> &program_points) {
+  shared_ptr<AbstractDomain> return_domain;
+
+  for (auto &&entry : program_points) {
+    BasicBlock *block = entry.first;
+
+    ReturnDomainVisitor visitor(program_points, block, return_domain);
+    visitor.visit(block);
+  }
+
+  if (return_domain) {
+    return return_domain;
+  }
+
+  llvm_unreachable("Expected the return domain to be present!");
+}
