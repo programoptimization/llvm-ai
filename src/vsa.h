@@ -17,7 +17,7 @@ using namespace pcpo;
 
 namespace {
 
-struct VsaPass : public FunctionPass {
+struct VsaPass : public ModulePass {
   // Pass identification, replacement for typeid
   static char ID;
 
@@ -34,22 +34,27 @@ private:
 public:
 
   VsaPass(bool do_print = false)
-      : FunctionPass(ID), do_print(do_print), worklist(),
+      : ModulePass(ID), do_print(do_print), worklist(),
         result(programPoints) {}
 
   bool doInitialization(Module &m) override {
-    return FunctionPass::doInitialization(m);
+    return ModulePass::doInitialization(m);
   }
 
   bool doFinalization(Module &m) override {
-    return FunctionPass::doFinalization(m);
+    return ModulePass::doFinalization(m);
   }
 
-  bool runOnFunction(Function &function) override {
+  bool runOnModule(Module &module) override {
     /// ignore empty functions and go to the next function
-    if (function.empty())
+    if (module.empty())
       /// our analysis does not change the IR
       return false;
+
+    auto const current_function = module.getFunction("main");
+    if (!current_function) {
+      return false;
+    }
 
     programPoints.clear();
     // getAnalysis<DominatorTreeWrapperPass>().getDomTree().viewGraph();
@@ -57,12 +62,12 @@ public:
             getAnalysis<DominatorTreeWrapperPass>().getDomTree(),programPoints);
 
     /// get the first basic block and push it into the worklist
-    worklist.push(&function.front());
+    worklist.push(&current_function->front());
 
     int visits = 0;
 
     std::map<std::string, std::vector<int /*visits*/>> trance;
-    for (auto &bb : function)
+    for (auto &bb : *current_function)
       trance[std::string(bb.getName())].clear();
 
     // pop instructions from the worklist and visit them until no more
@@ -84,7 +89,8 @@ public:
 
     /// print trace
     if (do_print) {
-      errs() << "\nTRACE OF FUNCTION " << function.getName() << ":\n";
+      // TODO Get the function name from the current call hierarchy
+      errs() << "\nTRACE OF FUNCTION " << current_function->getName() << ":\n";
       for (auto t : trance) {
         errs() << t.first << "#" << t.second.size() << ": ";
         for (auto s : t.second)

@@ -20,7 +20,7 @@ namespace pcpo {
 class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 
 public:
-  VsaVisitor(WorkList &q, DominatorTree& DT, std::map<BasicBlock *, State>& programPoints)
+  VsaVisitor(WorkList &q, DominatorTree const& DT, std::map<BasicBlock *, State>& programPoints)
       : worklist(q), DT(DT), newState(), programPoints(programPoints), bcs(programPoints){};
 
   /// create lub of states of preceeding basic blocks and use it as newState;
@@ -106,7 +106,7 @@ private:
     std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>> &valuePair);
 
   WorkList &worklist;
-  DominatorTree& DT;
+  DominatorTree const& DT;
   State newState;
   std::map<BasicBlock *, State>& programPoints;
   BranchConditions bcs;
