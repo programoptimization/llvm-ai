@@ -10,24 +10,40 @@ if(WIN32 OR CYGWIN)
   set(LLVM_LINK_COMPONENTS Core Support)
 endif()
 
+set(VSA_SOURCES
+src/ReturnDomainJoin.h
+src/ReturnDomainJoin.cpp
+src/CallStringPass.h
+src/CallStringPass.cpp
+src/vsa.h
+src/vsa.cpp
+src/abstract_domain/BoundedSet.h
+src/abstract_domain/StridedInterval.h
+src/abstract_domain/CompositeDomain.h
+src/abstract_domain/BoundedSet.cpp
+src/abstract_domain/StridedInterval.cpp
+src/abstract_domain/CompositeDomain.cpp
+src/fixpoint/state.h
+src/fixpoint/state.cpp
+src/fixpoint/vsa_visitor.h
+src/fixpoint/vsa_visitor.cpp
+src/fixpoint/worklist.h
+src/fixpoint/branch_conditions.h
+src/fixpoint/worklist.cpp
+src/fixpoint/branch_conditions.cpp
+src/api/vsa_result.h
+src/api/vsa_result.cpp
+src/api/vsa_result_value.h
+src/api/vsa_result_value.cpp
+test/BoundedSetTest.cpp
+test/StridedIntervalTest.cpp
+test/CompositeDomainTest.cpp
+test/TestRunner.cpp
+)
+
 if (NOT VSA_STATIC)
 add_llvm_loadable_module( llvm-vsa
-  src/vsa.cpp
-  src/CallStringPass.h
-  src/CallStringPass.cpp
-  src/abstract_domain/BoundedSet.cpp
-  src/abstract_domain/StridedInterval.cpp
-  src/abstract_domain/CompositeDomain.cpp
-  src/fixpoint/state.cpp
-  src/fixpoint/vsa_visitor.cpp
-  src/fixpoint/worklist.cpp
-  src/fixpoint/branch_conditions.cpp
-  src/api/vsa_result.cpp
-  src/api/vsa_result_value.cpp
-  test/BoundedSetTest.cpp
-  test/StridedIntervalTest.cpp
-  test/CompositeDomainTest.cpp
-  test/TestRunner.cpp
+  ${VSA_SOURCES}
   DEPENDS
   intrinsics_gen
   PLUGIN_TOOL
@@ -35,27 +51,8 @@ add_llvm_loadable_module( llvm-vsa
   )
 else()
 add_llvm_library(LLVMValueSetAnalysis
-  src/CallStringPass.h
-  src/CallStringPass.cpp
+  ${VSA_SOURCES}
   src/VSAPass.cpp
-  src/vsa.h
-  src/vsa.cpp
-  src/abstract_domain/BoundedSet.cpp
-  src/abstract_domain/StridedInterval.cpp
-  src/abstract_domain/CompositeDomain.cpp
-  src/fixpoint/state.cpp
-  src/fixpoint/vsa_visitor.h
-  src/fixpoint/vsa_visitor.cpp
-  src/fixpoint/worklist.cpp
-  src/fixpoint/branch_conditions.cpp
-  src/api/vsa_result.h
-  src/api/vsa_result.cpp
-  src/api/vsa_result_value.h
-  src/api/vsa_result_value.cpp
-  test/BoundedSetTest.cpp
-  test/StridedIntervalTest.cpp
-  test/CompositeDomainTest.cpp
-  test/TestRunner.cpp
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Transforms
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Transforms/ValueSetAnalysis/src
