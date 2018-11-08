@@ -37,7 +37,7 @@ bool State::put(Value &v, std::shared_ptr<AbstractDomain> ad) {
     vars[&v] = ad;
     changeCounts[&v] = 0;
   }
-
+  DEBUG_OUTPUT("State::put Updated value of " << v << " to " << *vars[&v]);
   return true;
 }
 
@@ -166,5 +166,16 @@ void State::print() const {
 
   for (const auto &var : vars)
     STD_OUTPUT(var.first->getName() << " -> " << *var.second);
+}
+
+std::string State::toString() const {
+    if(bottom){
+        return "bottom";
+    }
+    std::string ret = " ";
+    for (const auto &var : vars){
+        ret += var.first->getName().str() + "-$_" + "something" + "   "; //only -$ and _ are shown
+    }
+    return ret;
 }
 }  // namespace pcpo

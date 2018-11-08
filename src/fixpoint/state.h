@@ -53,6 +53,7 @@ public:
 
   /// print abstract domain of each variable
   void print() const;
+  std::string toString() const;
 
 private:
   std::map<Value *, std::shared_ptr<AbstractDomain>> vars;

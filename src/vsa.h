@@ -10,6 +10,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include <queue>
 
+#include "llvm/Support/GraphWriter.h"
+
 #include "llvm/IR/Dominators.h"
 
 using namespace llvm;
@@ -75,6 +77,15 @@ public:
       print_local(vis, visits);
 #endif
       visits++;
+#ifdef VISUAL_DEBUG
+      LLVMContext &c = function.getContext();
+      MDString *mdStr = MDString::get(c, "");
+      MDNode *mdNode = MDNode::get(c, mdStr);
+      for (auto bb : programPoints){
+        bb.first->front().setMetadata(bb.second.toString(), mdNode);
+      }
+      function.viewCFG();
+#endif
     }
 
 #ifndef DEBUG
