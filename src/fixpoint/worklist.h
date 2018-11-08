@@ -4,6 +4,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include <queue>
 #include <set>
+#include <stack>
 
 using namespace llvm;
 
@@ -21,7 +22,7 @@ public:
   bool empty();
 
 private:
-  std::queue<BasicBlock *> worklist;
+  std::stack<BasicBlock *> worklist;
   std::set<BasicBlock *> inWorklist;
 };
 }

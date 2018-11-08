@@ -12,13 +12,13 @@ void WorkList::push(BasicBlock *bb) {
 }
 
 BasicBlock *WorkList::pop() {
-  auto temp = worklist.front();
+  auto temp = worklist.top();
   inWorklist.erase(temp);
   worklist.pop();
   return temp;
 }
 
-BasicBlock *WorkList::peek() { return worklist.front(); }
+BasicBlock *WorkList::peek() { return worklist.top(); }
 
 bool WorkList::empty() { return worklist.empty(); }
 }
