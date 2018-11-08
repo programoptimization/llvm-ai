@@ -285,7 +285,7 @@ void VsaVisitor::visitCallInst(CallInst &I)
   llvm::BasicBlock& first = *I.getCalledFunction()->begin();
 
   // ImmutableCallSite s(&I);
-  I.dump();
+  // I.dump();
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {
