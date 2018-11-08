@@ -16,7 +16,7 @@ const int OUTPUT_SIGNED = false;
 
 enum DomainType { stridedInterval, boundedSet, compositeDomain };
 
-class AbstractDomain {
+class AbstractDomain : public std::enable_shared_from_this<AbstractDomain> {
 public:
 
   ///Destructor
@@ -31,7 +31,7 @@ public:
 
   virtual shared_ptr<AbstractDomain> widen() {
     // The default implementation simply returns a new shared_ptr to this
-    return shared_ptr<AbstractDomain>(this);
+    return shared_from_this();
   }
 
   virtual bool requiresWidening() {
