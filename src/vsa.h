@@ -27,16 +27,18 @@ struct VsaPass : public ModulePass {
   // worklist: instructions are handled in a FIFO manner
   WorkList worklist;
 
-  struct LocalData {
-    // map of programPoints
+//  struct LocalData {
+//    // map of programPoints
+//    std::map<BasicBlock *, State> programPoints;
+//    VsaResult result;
+//  };
     std::map<BasicBlock *, State> programPoints;
     VsaResult result;
-  };
 
 
 public:
   VsaPass(bool do_print = false)
-      : ModulePass(ID), do_print(do_print), worklist() {}
+      : ModulePass(ID), do_print(do_print), worklist(), programPoints(), result(programPoints) {}
 
   bool doInitialization(Module &m) override {
     return ModulePass::doInitialization(m);

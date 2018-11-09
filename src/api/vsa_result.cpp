@@ -5,21 +5,21 @@ using namespace llvm;
 namespace pcpo {
 
 void VsaResult::print() const {
-  for (auto &pp : globalProgramPoints) {
+  for (auto &pp : programPoints) {
     STD_OUTPUT("VsaVisitor::print():" << pp.first->getName());
     pp.second.print();
   }
 }
 
 bool VsaResult::isReachable(BasicBlock *BB) const {
-  return globalProgramPoints.find(BB) != globalProgramPoints.end();
+  return programPoints.find(BB) != programPoints.end();
 }
 
 bool VsaResult::isResultAvailable(BasicBlock *BB, Value *val) const {
   if (!isReachable(BB))
     return false;
 
-  return globalProgramPoints[BB].isAvailable(val);
+  return programPoints[BB].isAvailable(val);
 }
 
 std::unique_ptr<VsaResultValue> VsaResult::getAbstractValue(BasicBlock *BB,
@@ -28,6 +28,6 @@ std::unique_ptr<VsaResultValue> VsaResult::getAbstractValue(BasicBlock *BB,
          "VsaResult::getAbstractValue where no abstract value is available");
 
   return std::unique_ptr<VsaResultValue>(
-      new VsaResultValue(globalProgramPoints[BB].getAbstractValue(val)));
+      new VsaResultValue(programPoints[BB].getAbstractValue(val)));
 }
 }

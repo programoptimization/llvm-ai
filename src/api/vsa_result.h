@@ -13,8 +13,8 @@ namespace pcpo {
 class VsaResult {
 
 public:
-  VsaResult(std::map<BasicBlock *, State> &globalProgramPoints)
-      : globalProgramPoints(globalProgramPoints) {}
+  VsaResult(std::map<BasicBlock *, State> &programPoints)
+      : programPoints(programPoints) {}
 
   void print() const;
 
@@ -25,7 +25,7 @@ public:
   std::unique_ptr<VsaResultValue> getAbstractValue(BasicBlock *BB, Value *val) const;
 
 private:
-  std::map<BasicBlock *, State> &globalProgramPoints;
+  std::map<BasicBlock *, State> &programPoints;
 };
 }
 

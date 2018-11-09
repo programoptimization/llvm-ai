@@ -5,15 +5,9 @@
 #include "fixpoint/vsa_visitor.h"
 #include <llvm/IR/Module.h>
 
-template <>
-class CallStringVisitorTraits<VsaVisitor>
-{
-  void inject(VsaVisitor& visitor);
-};
-
 bool CallStringPass::runOnModule(llvm::Module &module) {
-  for (auto &&functions : module) {
-    // ..
+  for (auto &&function : module) {
+    STD_OUTPUT("Function: " << function.getName());
   }
 
   // Our analysis does not change the IR
