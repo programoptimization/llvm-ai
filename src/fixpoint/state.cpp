@@ -1,5 +1,6 @@
 #include "state.h"
 
+
 using namespace llvm;
 namespace pcpo {
 
@@ -167,15 +168,17 @@ void State::print() const {
   for (const auto &var : vars)
     STD_OUTPUT(var.first->getName() << " -> " << *var.second);
 }
+    
 
-std::string State::toString() const {
-    if(bottom){
-        return "bottom";
+llvm::raw_ostream& operator<<(llvm::raw_ostream &strm, const State &state) {
+    if(state.bottom) {
+        return strm << "bottom";
     }
-    std::string ret = " ";
-    for (const auto &var : vars){
-        ret += var.first->getName().str() + "-$_" + "something" + "   "; //only -$ and _ are shown
+    for (const auto &var : state.vars) {
+        
+        strm << var.first->getName().str() << &var.second;
     }
-    return ret;
+    return strm;
 }
+    
 }  // namespace pcpo
