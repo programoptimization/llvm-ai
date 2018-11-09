@@ -280,15 +280,7 @@ void VsaVisitor::visitPHINode(PHINode &I) {
   newState.put(I, bs);
 }
 
-void VsaVisitor::visitCallInst(CallInst &I)
-{
-  llvm::BasicBlock& first = *I.getCalledFunction()->begin();
-
-
-
-  // ImmutableCallSite s(&I);
-  // I.dump();
-}
+void VsaVisitor::visitCallInst(CallInst &I) {}
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {
   auto ad0 = newState.getAbstractValue(I.getOperand(0));

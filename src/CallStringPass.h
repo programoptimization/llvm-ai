@@ -17,14 +17,14 @@ using CallSites = std::vector<llvm::CallInst *>;
 
 struct ArgumentSet {};
 
-struct CallString {
+struct CallStringMap {
   CallSites sites_;
   ArgumentSet set_;
 };
 
 struct ReturnSet {};
 
-using WhatWeWant = std::map<CallString, ReturnSet>;
+using WhatWeWant = std::map<CallStringMap, ReturnSet>;
 
 template <typename SubVisitor>
 class CallStringVisitorTraits;
