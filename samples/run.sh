@@ -1,8 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Script to run all VSA on all test c-programs.
 # Please specify the path to llvm and clang in the environment variables
 # VSA_CLANG_PATH and VSA_LLVM_PATH.
+
+if [[ -z ${VSA_CLANG_PATH+x} ]]; then
+    echo Variable VSA_CLANG_PATH is not defined
+    exit 1
+fi
+
+if [[ -z ${VSA_LLVM_PATH+x} ]]; then
+    echo Variable VSA_CLANG_PATH is not defined
+    exit 1
+fi
 
 while :; do
     case $1 in
@@ -13,16 +23,20 @@ while :; do
     shift
 done
 
-if [ "$flag1" = "TEST" ]; then
-    EXE=llvm-vsa-tutorial.so
-    PASS=vsatutorialpass
-else
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
     EXE=llvm-vsa.so
-    PASS=vsapass
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    EXE=llvm-vsa.dylib
+elif [[ "$OSTYPE" == "win32" ]]; then
+    EXE=llvm-vsa.dylib.dll
+else
+    echo "Unknown OS check run.sh:21"
 fi
 
+PASS=csapass
+
 # if one argument passed: only analyze the passed program
-if [ $# == 1 ] ; then
+if [[ $# == 1 ]] ; then
     ARRAY=($1) 
 else # run all
     ARRAY=($(ls -d *.c))
@@ -47,13 +61,13 @@ do
     rm -f build/$f.bc
     rm -f build/$f-opt.bc
     # ... compile
-    $VSA_CLANG_PATH/bin/clang -O0 -emit-llvm $f -Xclang -disable-O0-optnone -c -o build/$f.bc
+    ${VSA_CLANG_PATH}/bin/clang -O0 -emit-llvm $f -Xclang -disable-O0-optnone -c -o build/$f.bc
     # ... run mem2reg optimization
-    $VSA_LLVM_PATH/bin/opt -mem2reg < build/$f.bc > build/$f-opt.bc
+    ${VSA_LLVM_PATH}/bin/opt -mem2reg < build/$f.bc > build/$f-opt.bc
     # ... disassemble optimized file
-    $VSA_LLVM_PATH/bin/llvm-dis build/$f-opt.bc
+    ${VSA_LLVM_PATH}/bin/llvm-dis build/$f-opt.bc
     # ... run VSA
-    $VSA_LLVM_PATH/bin/opt -load $VSA_LLVM_PATH/lib/$EXE -$PASS < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
+    ${VSA_LLVM_PATH}/bin/opt -load ${VSA_LLVM_PATH}/lib/${EXE} -${PASS} < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
     cp -n build/$f.out build/$f.ref
 done
 
