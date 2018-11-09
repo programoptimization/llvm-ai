@@ -1,6 +1,6 @@
 
 #include "ReturnDomainJoin.h"
-#include "abstract_domain/AbstractDomain.h"
+#include "../abstract_domain/AbstractDomain.h"
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/InstVisitor.h>
 
@@ -12,12 +12,12 @@ class ReturnDomainVisitor : public InstVisitor<ReturnDomainVisitor, void> {
 
   std::map<BasicBlock *, State> const &program_points_;
   BasicBlock *current_block_;
-  shared_ptr<AbstractDomain> &return_domain_;
+  std::shared_ptr<AbstractDomain> &return_domain_;
 
 public:
   explicit ReturnDomainVisitor(
       std::map<BasicBlock *, State> const &program_points,
-      BasicBlock *current_block, shared_ptr<AbstractDomain> &return_domain)
+      BasicBlock *current_block, std::shared_ptr<AbstractDomain> &return_domain)
       : program_points_(program_points), current_block_(current_block),
         return_domain_(return_domain) {}
 
@@ -27,7 +27,7 @@ public:
       llvm_unreachable("The ReturnInst is required to have a present domain!");
     }
 
-    shared_ptr<AbstractDomain> current = state->second.getAbstractValue(&I);
+    std::shared_ptr<AbstractDomain> current = state->second.getAbstractValue(&I);
 
     if (return_domain_) {
       return_domain_->leastUpperBound(*current);
@@ -40,7 +40,7 @@ public:
 
 std::shared_ptr<AbstractDomain>
 joinReturnDomain(std::map<BasicBlock *, State> &program_points) {
-  shared_ptr<AbstractDomain> return_domain;
+  std::shared_ptr<AbstractDomain> return_domain;
 
   for (auto &&entry : program_points) {
     BasicBlock *block = entry.first;

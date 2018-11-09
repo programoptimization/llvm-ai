@@ -33,11 +33,10 @@ struct VsaPass : public ModulePass {
     VsaResult result;
   };
 
-  CallHierarchy<LocalData> hierarchy_;
 
 public:
   VsaPass(bool do_print = false)
-      : ModulePass(ID), do_print(do_print), worklist(), result(programPoints) {}
+      : ModulePass(ID), do_print(do_print), worklist() {}
 
   bool doInitialization(Module &m) override {
     return ModulePass::doInitialization(m);
@@ -48,7 +47,7 @@ public:
   }
 
   bool runOnModule(Module &module) override {
-    /// ignore empty functions and go to the next function
+    /// ignore empty modules and go to the next module
     if (module.empty())
       /// our analysis does not change the IR
       return false;
@@ -57,6 +56,10 @@ public:
     if (!current_function) {
       return false;
     }
+
+//    std::map<BasicBlock *, State> programPoints;
+//    auto vsaResult = VsaResult(programPoints);
+//    CallHierarchy<LocalData> hierarchy(current_function, vsaResult);
 
     programPoints.clear();
     // getAnalysis<DominatorTreeWrapperPass>().getDomTree().viewGraph();

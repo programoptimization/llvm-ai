@@ -2,7 +2,7 @@
 #ifndef RETURN_DOMAIN_JOIN_H_
 #define RETURN_DOMAIN_JOIN_H_
 
-#include "fixpoint/state.h"
+#include "../fixpoint/state.h"
 #include <map>
 #include <memory>
 
