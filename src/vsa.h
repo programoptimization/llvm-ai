@@ -78,15 +78,17 @@ public:
 #endif
       visits++;
 #ifdef VISUAL_DEBUG
-      LLVMContext &c = function.getContext();
-      MDString *mdStr = MDString::get(c, "");
-      MDNode *mdNode = MDNode::get(c, mdStr);
-      for (auto bb : programPoints){
-        bb.first->front().setMetadata(bb.second.toString(), mdNode);
-      }
-      function.viewCFG();
+        errs() << "Run " << visits << ":\n";
+        for (auto bbAndState : programPoints){
+            errs() << " BB " << bbAndState.first->front() << "\n";
+            errs() << "  " << bbAndState.second << "\n";
+        }
+        errs() << "\n";
 #endif
     }
+#ifdef VISUAL_DEBUG
+      function.viewCFG();
+#endif
 
 #ifndef DEBUG
     print_local(vis, visits - 1);
