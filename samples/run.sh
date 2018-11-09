@@ -14,10 +14,26 @@ while :; do
 done
 
 if [ "$flag1" = "TEST" ]; then
-    EXE=llvm-vsa-tutorial.so
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        EXE=llvm-vsa-tutorial.so
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        EXE=llvm-vsa-tutorial.dylib
+    elif [[ "$OSTYPE" == "win32" ]]; then
+        EXE=llvm-vsa-tutorial.dll
+    else
+        echo "Unknown OS check run.sh:21"
+    fi
     PASS=vsatutorialpass
 else
-    EXE=llvm-vsa.so
+	if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        EXE=llvm-vsa.so
+	elif [[ "$OSTYPE" == "darwin"* ]]; then
+        EXE=llvm-vsa.dylib
+	elif [[ "$OSTYPE" == "win32" ]]; then
+        EXE=llvm-vsa.dylib.dll
+	else
+        echo "Unknown OS check run.sh:21"
+	fi
     PASS=vsapass
 fi
 
