@@ -1,4 +1,4 @@
-int gcd() {
+int main() {
     unsigned a = 7387;
     unsigned b = 8633;
     unsigned r;

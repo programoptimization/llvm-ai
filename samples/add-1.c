@@ -1,4 +1,4 @@
-int test() {
+int main() {
     int a = 1; a++; // a={2}
     int b = 2; b++; // b={3}
     int c;
