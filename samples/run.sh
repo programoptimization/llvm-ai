@@ -30,7 +30,7 @@ else
 	elif [[ "$OSTYPE" == "darwin"* ]]; then
         EXE=llvm-vsa.dylib
 	elif [[ "$OSTYPE" == "win32" ]]; then
-        EXE=llvm-vsa.dylib.dll
+        EXE=llvm-vsa.dll
 	else
         echo "Unknown OS check run.sh:21"
 	fi
