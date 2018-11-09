@@ -9,10 +9,7 @@
 #include "../abstract_domain/AbstractDomain.h"
 #include "../util/util.h"
 
-#include <string>
 #include <sstream>
-#include <iostream>
-
 #include <map>
 #include <memory>
 
@@ -57,7 +54,6 @@ public:
 
   /// print abstract domain of each variable
   void print() const;
-  std::string toString() const;
   friend llvm::raw_ostream& operator<<(llvm::raw_ostream&, const State&);
 
 private:
