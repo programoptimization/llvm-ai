@@ -421,4 +421,18 @@ void VsaVisitor::print() const {
 std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints() {
   return programPoints;
 }
+
+DominatorTree const &VsaVisitor::getCurrentDominatorTree() {
+  // Caches the dominator tree on a per function basis
+  auto current = getCurrentFunction();
+  auto itr = dominatorTreeCache.find(current);
+  if (itr == dominatorTreeCache.end()) {
+    DominatorTree dom;
+    dom.recalculate(*current);
+
+    itr = dominatorTreeCache.emplace(current, std::move(dom)).first;
+  }
+
+  return itr->second;
+}
 } // namespace pcpo

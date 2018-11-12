@@ -117,19 +117,7 @@ private:
   std::unordered_map<llvm::Function *, DominatorTree> dominatorTreeCache;
 
   /// Returns the dominator tree for the current function we are inside
-  DominatorTree const &getCurrentDominatorTree() {
-    // Caches the dominator tree on a per function basis
-    auto current = getCurrentFunction();
-    auto itr = dominatorTreeCache.find(current);
-    if (itr == dominatorTreeCache.end()) {
-      DominatorTree dom;
-      dom.recalculate(*current);
-
-      itr = dominatorTreeCache.emplace(current, std::move(dom)).first;
-    }
-
-    return itr->second;
-  }
+  DominatorTree const &getCurrentDominatorTree();
 
   /// Returns the function where are currently inside in
   llvm::Function *getCurrentFunction() {
@@ -140,7 +128,6 @@ private:
 
   // TODO move this state out of the visitor
   WorkList &worklist;
-  DominatorTree const &DT;
   std::map<BasicBlock *, State> &programPoints;
   /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
 };
