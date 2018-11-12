@@ -1358,7 +1358,7 @@ shared_ptr<AbstractDomain> StridedInterval::widen(AbstractDomain &other) {
     switch (wideningDir){
       case up:
         bound = bound.shl(sizeIncrease.getBitWidth()-1);
-        if(sizeIncrease.ult(bound)){
+        if(sizeIncrease.ugt(bound)){
             return StridedInterval::create_top(sizeIncrease.getBitWidth());
         }
         //enlarge top
@@ -1366,7 +1366,7 @@ shared_ptr<AbstractDomain> StridedInterval::widen(AbstractDomain &other) {
         break;
       case down:
         bound = bound.shl(sizeIncrease.getBitWidth()-1);
-        if(sizeIncrease.ult(bound)){
+        if(sizeIncrease.ugt(bound)){
             return StridedInterval::create_top(sizeIncrease.getBitWidth());
         }
         //enlarge top
@@ -1374,7 +1374,7 @@ shared_ptr<AbstractDomain> StridedInterval::widen(AbstractDomain &other) {
         break;
       case both:
         bound = bound.shl(sizeIncrease.getBitWidth()-2);
-        if(sizeIncrease.ult(bound)){
+        if(sizeIncrease.ugt(bound)){
             return StridedInterval::create_top(sizeIncrease.getBitWidth());
         }
         //enlarge top & bottom by half size
