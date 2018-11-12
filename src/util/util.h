@@ -10,7 +10,7 @@
 /// settings
 
 /// should debug output enabled?
-#define DEBUG
+//#define DEBUG
 #define VISUAL_DEBUG
 
 /// type of abstract domain
