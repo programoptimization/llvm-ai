@@ -176,7 +176,7 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream &strm, const State &state) {
     }
     for (const auto &var : state.vars) {
         
-        strm << *var.first << *var.second << "\n";
+        strm << *var.first << " -- " << *var.second << "\n";
     }
     return strm;
 }
