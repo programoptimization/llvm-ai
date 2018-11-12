@@ -72,7 +72,7 @@ public:
   bool operator<=(AbstractDomain &other);
 
   friend std::ostream &operator<<(std::ostream &os, const BoundedSet &bs);
-  bool contains(APInt &value) const;
+  bool contains(APInt value) const;
   bool isTop() const;
   bool isBottom() const;
   void printOut() const;

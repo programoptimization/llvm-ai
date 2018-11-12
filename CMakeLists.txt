@@ -22,6 +22,7 @@ add_llvm_loadable_module( llvm-vsa
   src/abstract_domain/CompositeDomain.cpp
   src/abstract_domain/CompositeDomain.h
   src/abstract_domain/Util.h
+  src/abstract_domain/SimpleInterval.cpp
   src/fixpoint/state.cpp
   src/fixpoint/state.h
   src/fixpoint/vsa_visitor.cpp

@@ -17,7 +17,7 @@ bool State::put(Value &v, std::shared_ptr<AbstractDomain> ad) {
     return true;
   }
 
-  DEBUG_OUTPUT("State::put for " << v.getName());
+  DEBUG_OUTPUT("State::put for " << v.getName() << " with " << *ad);
   if (vars.find(&v) != vars.end()) {
     if (*ad<=(*vars[&v])) {
       return false;
