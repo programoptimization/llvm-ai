@@ -29,7 +29,7 @@ public:
   virtual bool operator<=(AbstractDomain &other) = 0;
   virtual shared_ptr<AbstractDomain> leastUpperBound(AbstractDomain &other) = 0;
 
-  virtual shared_ptr<AbstractDomain> widen() {
+  virtual shared_ptr<AbstractDomain> widen(AbstractDomain &other) {
     // The default implementation simply returns a new shared_ptr to this
     return shared_ptr<AbstractDomain>(this);
   }

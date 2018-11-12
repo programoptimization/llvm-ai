@@ -1,5 +1,6 @@
 #include "state.h"
 
+
 using namespace llvm;
 namespace pcpo {
 
@@ -21,20 +22,23 @@ bool State::put(Value &v, std::shared_ptr<AbstractDomain> ad) {
     if (*ad<=(*vars[&v])) {
       return false;
     }
-
-    vars[&v] = vars[&v]->leastUpperBound(*ad);
-
-    if(vars[&v]->requiresWidening()) {
-      if(changeCounts[&v] > WIDENING_AFTER) {
-          vars[&v] = vars[&v]->widen();
-      }
-      changeCounts[&v]++;
+    auto savedVar = vars[&v];
+    if(vars[&v]->requiresWidening() && changeCounts[&v] > WIDENING_AFTER){
+        //widen
+        vars[&v] = vars[&v]->widen(*ad);
+    }else{
+        //join
+        vars[&v] = vars[&v]->leastUpperBound(*ad);
+    }
+    //only count if vars are actually changed
+    if( !(*vars[&v]<=*savedVar && *savedVar<=*vars[&v]) ){
+        changeCounts[&v]++;
     }
   } else {
     vars[&v] = ad;
     changeCounts[&v] = 0;
   }
-
+  DEBUG_OUTPUT("State::put Updated value of " << v << " to " << *vars[&v]);
   return true;
 }
 
@@ -164,4 +168,17 @@ void State::print() const {
   for (const auto &var : vars)
     STD_OUTPUT(var.first->getName() << " -> " << *var.second);
 }
+    
+
+llvm::raw_ostream& operator<<(llvm::raw_ostream &strm, const State &state) {
+    if(state.bottom) {
+        return strm << "bottom";
+    }
+    for (const auto &var : state.vars) {
+        
+        strm << *var.first << " -- " << *var.second << "\n";
+    }
+    return strm;
+}
+    
 }  // namespace pcpo
