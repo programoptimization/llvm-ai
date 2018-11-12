@@ -10,6 +10,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include <queue>
 
+#include "llvm/Support/GraphWriter.h"
+
 #include "llvm/IR/Dominators.h"
 
 using namespace llvm;
@@ -75,7 +77,18 @@ public:
       print_local(vis, visits);
 #endif
       visits++;
+#ifdef VISUAL_DEBUG
+        errs() << "Run " << visits << ":\n";
+        for (auto bbAndState : programPoints){
+            errs() << " BB " << bbAndState.first->front() << "\n";
+            errs() << bbAndState.second << "\n";
+        }
+        errs() << "\n";
+#endif
     }
+#ifdef VISUAL_DEBUG
+      function.viewCFG();
+#endif
 
 #ifndef DEBUG
     print_local(vis, visits - 1);

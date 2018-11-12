@@ -9,6 +9,7 @@
 #include "../abstract_domain/AbstractDomain.h"
 #include "../util/util.h"
 
+#include <sstream>
 #include <map>
 #include <memory>
 
@@ -53,6 +54,7 @@ public:
 
   /// print abstract domain of each variable
   void print() const;
+  friend llvm::raw_ostream& operator<<(llvm::raw_ostream&, const State&);
 
 private:
   std::map<Value *, std::shared_ptr<AbstractDomain>> vars;

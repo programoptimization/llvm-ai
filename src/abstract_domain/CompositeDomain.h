@@ -65,7 +65,7 @@ public:
   shared_ptr<AbstractDomain> leastUpperBound(AbstractDomain &other);
 
   // Widening
-  virtual shared_ptr<AbstractDomain> widen();
+  virtual shared_ptr<AbstractDomain> widen(AbstractDomain &other);
   virtual bool requiresWidening();
 
   bool operator==(const BoundedSet &other);

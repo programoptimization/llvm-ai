@@ -10,6 +10,7 @@
 
 /// should debug output enabled?
 //#define DEBUG
+#define VISUAL_DEBUG
 
 /// type of abstract domain
 //#define AD_TYPE BoundedSet
@@ -17,7 +18,7 @@
 //define AD_TYPE CompositeDomain
 
 /// how many changes do we allow before we apply widening (for ADs in which it is reuired)
-#define WIDENING_AFTER 5000
+#define WIDENING_AFTER 1
 
 /// do not to touch anything beneath here (useful functions)
 
