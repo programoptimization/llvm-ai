@@ -132,6 +132,11 @@ APInt SimpleInterval::smin() const{
     SimpleInterval& o = static_cast<SimpleInterval&>(o_);               \
     return std::make_shared<SimpleInterval>(_##x(o, nuw, nsw));         \
   }
+#define SIMPLE_INTERVAL_WRAPPER3(x) \
+  shared_ptr<AbstractDomain> SimpleInterval::x(AbstractDomain &o_) {    \
+    SimpleInterval& o = static_cast<SimpleInterval&>(o_);               \
+    return std::make_shared<SimpleInterval>(_##x(o));                   \
+  }
 
 SIMPLE_INTERVAL_WRAPPER2(add)
 SIMPLE_INTERVAL_WRAPPER2(sub)
@@ -139,11 +144,9 @@ SIMPLE_INTERVAL_WRAPPER2(mul)
 SIMPLE_INTERVAL_WRAPPER(udiv)
 SIMPLE_INTERVAL_WRAPPER(urem)
 SIMPLE_INTERVAL_WRAPPER(srem)
-
-shared_ptr<AbstractDomain> SimpleInterval::leastUpperBound(AbstractDomain &o_) { \
-  SimpleInterval& o = static_cast<SimpleInterval&>(o_); 
-  return std::make_shared<SimpleInterval>(_leastUpperBound(o)); 
-}
+SIMPLE_INTERVAL_WRAPPER3(leastUpperBound)
+SIMPLE_INTERVAL_WRAPPER3(intersect)
+SIMPLE_INTERVAL_WRAPPER3(widen)
 
 SimpleInterval SimpleInterval::_add (SimpleInterval const& o, bool nuw, bool nsw) {
   if (isBot || o.isBot) return SimpleInterval();
@@ -580,7 +583,28 @@ bool SimpleInterval::isTop() const {
   }
 }
 
-shared_ptr<AbstractDomain> SimpleInterval::widen(AbstractDomain &other) {
+SimpleInterval SimpleInterval::_widen(SimpleInterval const& o) {
+  if (isBot) return o;
+  if (o.isBot) return *this;
+
+  APInt incr = end - begin;;
+  if (incr.uge(APInt::getSignedMaxValue(bitWidth))) {
+    // Too large already, return true
+    return SimpleInterval(true, bitWidth);
+  } 
+
+  // Widen the sides that changed
+  SimpleInterval r = _leastUpperBound(o);
+  int flags = (r.begin != begin) | (r.end != end) << 1;
+  incr.ashrInPlace(flags == 3 ? 1 : 0);
+  incr += incr.isNullValue(); // Always widen by at least 1
+  if (flags & 1) r.begin -= incr;
+  if (flags & 2) r.end   += incr;
+  return r;
+}
+
+#if 0
+shared_ptr<AbstractDomain> SimpleInterval::widen(AbstractDomain const& other) {
   //join
   shared_ptr<AbstractDomain> ret = leastUpperBound(other);
 
@@ -641,6 +665,7 @@ shared_ptr<AbstractDomain> SimpleInterval::widen(AbstractDomain &other) {
   }
   return ret;
 }
+#endif
 
 bool SimpleInterval::requiresWidening() {
   // This AD requires widening to ensure speedy termination
