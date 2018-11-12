@@ -81,7 +81,7 @@ public:
         errs() << "Run " << visits << ":\n";
         for (auto bbAndState : programPoints){
             errs() << " BB " << bbAndState.first->front() << "\n";
-            errs() << "  " << bbAndState.second << "\n";
+            errs() << bbAndState.second << "\n";
         }
         errs() << "\n";
 #endif
