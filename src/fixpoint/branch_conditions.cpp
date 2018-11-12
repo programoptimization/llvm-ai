@@ -66,7 +66,9 @@ void BranchConditions::unApplyCondition(BasicBlock *pred) {
 void BranchConditions::putBranchConditions(BasicBlock *pred, BasicBlock *bb,
                                            Value *val,
                                            std::shared_ptr<AbstractDomain> ad) {
-
+  // ad is the abstract domain of the value we are currently branching from
+  // constrained inside the current branch.
+  // only 1 level deep!
   branchConditions[pred][bb][val] = ad;
 }
 }

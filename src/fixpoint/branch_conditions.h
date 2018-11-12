@@ -32,6 +32,8 @@ private:
 
   std::map<BasicBlock *,
            std::map<BasicBlock *,
+  std::map<BasicBlock * , // Source block
+           std::map<BasicBlock *, // Target block
                     std::map<Value *, std::shared_ptr<AbstractDomain>>>>
       branchConditions;
 
