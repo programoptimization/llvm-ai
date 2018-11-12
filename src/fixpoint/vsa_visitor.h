@@ -6,8 +6,10 @@
 #include <llvm/IR/InstVisitor.h>
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Operator.h>
+#include <unordered_map>
 #include "../abstract_domain/AbstractDomain.h"
 #include "../util/util.h"
+#include "../interprocedural/CallHierarchy.h"
 #include "branch_conditions.h"
 #include "state.h"
 #include "worklist.h"
@@ -20,8 +22,8 @@ namespace pcpo {
 class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 
 public:
-  VsaVisitor(WorkList &q, DominatorTree const& DT, std::map<BasicBlock *, State>& programPoints)
-      : worklist(q), DT(DT), newState(), programPoints(programPoints), bcs(programPoints){};
+  VsaVisitor(WorkList &q, CallHierarchy const& callHierarchy, std::map<BasicBlock *, State>& programPoints)
+      : worklist(q), currentCallHierarchy(callHierarchy), programPoints(programPoints), bcs(programPoints){};
 
   /// create lub of states of preceeding basic blocks and use it as newState;
   /// the visitor automatically visits all instructions of this basic block
@@ -105,12 +107,43 @@ private:
   void putBothBranchConditions(BranchInst& I, Value* op,
     std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>> &valuePair);
 
-  WorkList &worklist;
-  DominatorTree const& DT;
+  pcpo::CallHierarchy const &currentCallHierarchy;
+
+  /// Returns the current call hierarchy
+  pcpo::CallHierarchy const &getCurrentCallHierarchy() {
+    return currentCallHierarchy;
+  }
+
+  std::unordered_map<llvm::Function *, DominatorTree> dominatorTreeCache;
+
+  /// Returns the dominator tree for the current function we are inside
+  DominatorTree const &getCurrentDominatorTree() {
+    // Caches the dominator tree on a per function basis
+    auto current = getCurrentFunction();
+    auto itr = dominatorTreeCache.find(current);
+    if (itr == dominatorTreeCache.end()) {
+      DominatorTree dom;
+      dom.recalculate(*current);
+
+      itr = dominatorTreeCache.emplace(current, std::move(dom)).first;
+    }
+
+    return itr->second;
+  }
+
+  /// Returns the function where are currently inside in
+  llvm::Function *getCurrentFunction() {
+    return getCurrentCallHierarchy().getCurrentFunction();
+  }
+
   State newState;
-  std::map<BasicBlock *, State>& programPoints;
-  BranchConditions bcs;
+
+  // TODO move this state out of the visitor
+  WorkList &worklist;
+  DominatorTree const &DT;
+  std::map<BasicBlock *, State> &programPoints;
+  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
 };
-}
+} // namespace pcpo
 
 #endif // PROJECT_VISITOR_H

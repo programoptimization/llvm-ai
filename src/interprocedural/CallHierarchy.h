@@ -13,8 +13,9 @@ namespace pcpo {
 class CallHierarchy {
 
 public:
-  explicit CallHierarchy(std::deque<llvm::CallInst *> callInsts)
-      : callInsts(std::move(callInsts)) {}
+  explicit CallHierarchy(llvm::Function *mainFunction,
+                         std::deque<llvm::CallInst *> callInsts = {})
+      : mainFunction(mainFunction), callInsts(std::move(callInsts)) {}
 
   CallHierarchy append(llvm::CallInst *callInst) const {
     auto newCallInsts = callInsts;
@@ -22,10 +23,21 @@ public:
     if (newCallInsts.size() > CSA_DEPTH) {
       newCallInsts.pop_front();
     }
-    return CallHierarchy(newCallInsts);
+    return CallHierarchy(mainFunction, newCallInsts);
+  }
+
+  llvm::Function *getCurrentFunction() const {
+    if (callInsts.empty()) {
+      // If we are in the main function return it
+      return mainFunction;
+    } else {
+      // Otherwise return the current function we are inside
+      return callInsts.back()->getCalledFunction();
+    }
   }
 
 private:
+  llvm::Function *mainFunction;
   std::deque<llvm::CallInst *> callInsts;
 };
 

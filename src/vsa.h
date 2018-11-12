@@ -63,10 +63,12 @@ public:
 //    auto vsaResult = VsaResult(programPoints);
 //    CallHierarchy<LocalData> hierarchy(current_function, vsaResult);
 
+    CallHierarchy hierarchy(current_function);
+
     programPoints.clear();
-    // getAnalysis<DominatorTreeWrapperPass>().getDomTree().viewGraph();
+
     VsaVisitor vis(worklist,
-                   getAnalysis<DominatorTreeWrapperPass>().getDomTree(),
+                   hierarchy,
                    programPoints);
 
     /// get the first basic block and push it into the worklist
@@ -125,7 +127,6 @@ public:
   // We don't modify the program, so we preserve all analyses.
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.setPreservesAll();
-    AU.addRequired<DominatorTreeWrapperPass>();
   }
 
   VsaResult &getResult() { return result; }

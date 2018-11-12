@@ -48,8 +48,11 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
 
   /// prune state with predominator (to get rid of mappings that are NOT
   /// guaranteed to be in the state)
-  if(numPreds>1)
-    newState.prune(programPoints[DT.getNode(&BB)->getIDom()->getBlock()]);
+  if (numPreds > 1) {
+    newState.prune(
+        programPoints
+            [getCurrentDominatorTree().getNode(&BB)->getIDom()->getBlock()]);
+  }
 
   /// visited and still bottom: something is wrong...
   /// none of the preceeding basic blocks has been visited!?
