@@ -1275,7 +1275,7 @@ bool StridedInterval::operator<=(AbstractDomain &other) {
   }
 }
 
-bool StridedInterval::contains(APInt &value) const {
+bool StridedInterval::contains(APInt value) const {
   assert(value.getBitWidth() == bitWidth);
 
   if (value.getBitWidth() != bitWidth)

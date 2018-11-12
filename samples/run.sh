@@ -56,7 +56,7 @@ mkdir -p build
 for f in ${ARRAY[*]};
 do
     # ... print file name
-    echo "###############################################################################"
+    echo "##"
     echo $(pwd)/$f
     # ... clean up for old run
     rm -f build/$f.out

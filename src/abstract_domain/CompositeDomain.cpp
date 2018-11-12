@@ -289,7 +289,7 @@ size_t CompositeDomain::size() const { return delegate->size(); }
 bool CompositeDomain::isTop() const { return delegate->isTop(); }
 bool CompositeDomain::isBottom() const { return delegate->isBottom(); }
 
-bool CompositeDomain::contains(APInt& value) const{
+bool CompositeDomain::contains(APInt value) const{
   return false;
 }
 

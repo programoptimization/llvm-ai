@@ -210,7 +210,7 @@ bool BoundedSet::containsValue(unsigned numBits, uint64_t n) const {
   return contains(elem);
 }
 
-bool BoundedSet::contains(APInt &value) const {
+bool BoundedSet::contains(APInt value) const {
   if (isTop()) {
     return true;
   } else if (values.size() == 0) {
