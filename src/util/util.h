@@ -18,7 +18,7 @@
 //define AD_TYPE CompositeDomain
 
 /// how many changes do we allow before we apply widening (for ADs in which it is reuired)
-#define WIDENING_AFTER 3
+#define WIDENING_AFTER 1
 
 /// do not to touch anything beneath here (useful functions)
 
