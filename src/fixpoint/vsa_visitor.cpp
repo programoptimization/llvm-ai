@@ -87,6 +87,7 @@ void VsaVisitor::visitTerminatorInst(TerminatorInst &I) {
 
   DEBUG_OUTPUT(
       "visitTerminationInst: state has been changed -> push successors");
+  DEBUG_OUTPUT("visitTerminationInst: new state is\n" << programPoints[currentBB]);
   DEBUG_OUTPUT("visitTerminationInst: new state in bb "
                << currentBB->getName());
 

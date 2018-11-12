@@ -226,6 +226,7 @@ void testSimpleDomain(u32 w, u32 iters, u64* errs) {
             *errs += !lub.contains(x) || !lub.contains(y);
             *errs += b.contains(x) && !glb.contains(x);
             *errs += a.contains(y) && !glb.contains(y);
+            *errs += !a.contains(y) && glb.contains(y); // It is not obvious that this condition has to be met. However, it is needed for narrowing.
 
             *errs += (x==y && !aeq.contains(x)) || (!(x==y) && !beq.contains(x));
             *errs += (x!=y && !ane.contains(x)) || (!(x!=y) && !bne.contains(x));
