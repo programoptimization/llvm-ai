@@ -569,9 +569,66 @@ bool SimpleInterval::isTop() const {
   }
 }
 
-shared_ptr<AbstractDomain> SimpleInterval::widen() {
-  /// This is where we should look at smarter ways to do this...
-  return create_top(bitWidth);
+shared_ptr<AbstractDomain> SimpleInterval::widen(AbstractDomain &other) {
+  //join
+  shared_ptr<AbstractDomain> ret = leastUpperBound(other);
+
+  if(ret->isBottom() || ret->isTop()){
+    return ret;
+  }
+  //check which direction expands
+  enum wideningDirection{ up, down, both, none };
+  auto wideningDir = none;
+  if(ret->getUMax() != getUMax()){
+    wideningDir = up;
+  }
+  if(ret->getUMin() != getUMin()){
+    if(wideningDir == up){
+      wideningDir = both;
+    }else{
+      wideningDir = down;
+    }
+  }
+
+  //widen
+  /*
+   * every time widening happens the interval doubles in size
+   * if the sizeIncrease is bigger than half of the available int the interval is set to top
+   */
+  APInt sizeIncrease = ret->getUMax() - ret->getUMin();
+  if (wideningDir == none || ret->getDomainType() != simpleInterval){
+    return ret;
+  }else{
+    APInt bound = APInt(sizeIncrease.getBitWidth(), 1);
+    switch (wideningDir){
+      case up:
+        bound = bound.shl(sizeIncrease.getBitWidth()-1);
+            if(sizeIncrease.ugt(bound)){
+              return SimpleInterval::create_top(sizeIncrease.getBitWidth());
+            }
+            //enlarge top
+            static_cast<SimpleInterval *>(ret.get())->end = static_cast<SimpleInterval *>(ret.get())->end + sizeIncrease;
+            break;
+      case down:
+        bound = bound.shl(sizeIncrease.getBitWidth()-1);
+            if(sizeIncrease.ugt(bound)){
+              return SimpleInterval::create_top(sizeIncrease.getBitWidth());
+            }
+            //enlarge top
+            static_cast<SimpleInterval *>(ret.get())->begin = static_cast<SimpleInterval *>(ret.get())->begin - sizeIncrease;
+            break;
+      case both:
+        bound = bound.shl(sizeIncrease.getBitWidth()-2);
+            if(sizeIncrease.ugt(bound)){
+              return SimpleInterval::create_top(sizeIncrease.getBitWidth());
+            }
+            //enlarge top & bottom by half size
+            static_cast<SimpleInterval *>(ret.get())->end = static_cast<SimpleInterval *>(ret.get())->end + sizeIncrease.lshr(1);
+            static_cast<SimpleInterval *>(ret.get())->begin = static_cast<SimpleInterval *>(ret.get())->begin - sizeIncrease.lshr(1);
+            break;
+    }
+  }
+  return ret;
 }
 
 bool SimpleInterval::requiresWidening() {
