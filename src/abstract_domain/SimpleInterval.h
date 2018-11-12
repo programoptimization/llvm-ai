@@ -106,7 +106,7 @@ public:
   DomainType getDomainType() const { return simpleInterval; };
 
   // Widening
-  virtual shared_ptr<AbstractDomain> widen();
+  virtual shared_ptr<AbstractDomain> widen(AbstractDomain &other);
   virtual bool requiresWidening();
 
 
