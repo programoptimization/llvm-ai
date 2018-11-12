@@ -13,11 +13,16 @@ namespace pcpo {
 using llvm::APInt;
 
 class SimpleInterval : public AbstractDomain {
-
+private:
+  void debug_break() {
+    // You can set a breakpoint here
+    debug_id = debug_id;
+  }
+  
 public:
 
   /// Constructor: Bottom
-  SimpleInterval() : isBot(true) {}
+  SimpleInterval() : isBot(true), debug_id(++debug_id_gen) {debug_break();}
   /// Constructor: Top
   SimpleInterval(bool isTop, unsigned bitWidth);
   /// Constructor: Constant
@@ -154,6 +159,8 @@ private:
   APInt begin;
   APInt end;
   bool isBot;
+  unsigned debug_id;
+  static unsigned debug_id_gen;
 };
 
 } // namespace pcpo

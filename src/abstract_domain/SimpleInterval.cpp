@@ -15,40 +15,50 @@ using llvm::APInt;
 using llvm::APIntOps::GreatestCommonDivisor;
 using std::vector;
 
+unsigned SimpleInterval::debug_id_gen;
+
 
 SimpleInterval::SimpleInterval(const SimpleInterval& other)
     : bitWidth(other.bitWidth),
       begin(other.begin),
       end(other.end),
-      isBot(other.isBot) {}
+      isBot(other.isBot),
+      debug_id(++debug_id_gen) {debug_break();}
 
 SimpleInterval::SimpleInterval(APInt begin, APInt end)
     : bitWidth(begin.getBitWidth()),
       begin(begin), end(end),
-      isBot(false) {
+      isBot(false),
+      debug_id(++debug_id_gen)  {
   assert(end.getBitWidth() == bitWidth);
+  debug_break();
 }
 
 SimpleInterval::SimpleInterval(APInt value)
     : bitWidth(value.getBitWidth()),
       begin(value), end(value),
-      isBot{false} {}
+      isBot{false},
+      debug_id(++debug_id_gen)  {debug_break();}
 
 SimpleInterval::SimpleInterval(bool isTop, unsigned bitWidth)
     : bitWidth(bitWidth),
       begin(APInt::getMinValue(bitWidth)),
       end(APInt::getMaxValue(bitWidth)),
-      isBot(!isTop) {}
+      isBot(!isTop),
+      debug_id(++debug_id_gen)  {debug_break();}
 
 SimpleInterval::SimpleInterval(unsigned bitWidth, uint64_t begin,
     uint64_t end)
     : bitWidth(bitWidth),
       begin(APInt(bitWidth, begin)),
       end(APInt(bitWidth, end)),
-      isBot(false) {}
+      isBot(false),
+      debug_id(++debug_id_gen) {debug_break();}
 
 SimpleInterval::SimpleInterval(BoundedSet &set)
-    : bitWidth(set.getBitWidth()) {
+    : bitWidth(set.getBitWidth()),
+      debug_id(++debug_id_gen) {
+  debug_break();
   if (set.isBottom()) {
     // create this a bottom
     isBot = true;
@@ -397,11 +407,10 @@ SimpleInterval SimpleInterval::_icmp_inv(SimpleInterval a) {
 
 SimpleInterval SimpleInterval::_icmp_shift(SimpleInterval a) {
   if (a.isBottom()) return a;
-  SimpleInterval r(true, a.bitWidth);
   APInt q = APInt::getSignedMinValue(a.bitWidth);
-  r.begin += q;
-  r.end += q;
-  return r;
+  a.begin += q;
+  a.end += q;
+  return a;
 }
 
 void SimpleInterval::_icmp(CmpInst::Predicate pred, SimpleInterval a1, SimpleInterval a2, SimpleInterval* r1, SimpleInterval* r2) {
@@ -465,7 +474,6 @@ bool SimpleInterval::innerLe(APInt a, APInt b) const {
   // Return whether a <= b relative to the interval. So if both a, b are inside, then a <= b iff a is no farther from begin than b.
   return (a - begin).ule(b - begin);
 }
-
 
 SimpleInterval SimpleInterval::_leastUpperBound(SimpleInterval const& o) {
   if (isBot)   return SimpleInterval(o);
@@ -533,11 +541,14 @@ SimpleInterval SimpleInterval::_intersect(SimpleInterval const& o) {
     r.begin = begin;
     r.end = o.end;
   } else {
-    // We have all of o, They may wrap differently, but that does not matter. Take the smaller one.
-    if ((o.end-o.begin).ule(end-begin)) {
-      r = o;
+    // We have all of o. They may wrap differently.
+    if (innerLe(o.begin, o.end)) {
+      // They do not.
+      return o;
     } else {
-      r = *this;
+      // Here we could choose one of the two, but for the purpose of narrowing we need to return
+      // some superset of *this.
+      return *this;
     }
   }
 
@@ -594,7 +605,7 @@ llvm::raw_ostream &SimpleInterval::print(llvm::raw_ostream &os) {
 }
 
 void SimpleInterval::printOut() const {
-  errs() << "SimpleInterval@" << this << "=";
+  errs() << "SimpleInterval@" << debug_id << "=";
   if (isBot) {
     errs() << "[]" << "_" << bitWidth;
   } else if(isTop()) {
