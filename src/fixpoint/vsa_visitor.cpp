@@ -323,6 +323,10 @@ void VsaVisitor::visitCallInst(CallInst &I) {
   assert(functionArgIt == I.arg_end() && functionParamIt == calledFunction->arg_end());
 }
 
+void VsaVisitor::visitReturnInst(ReturnInst &I) {
+  //
+}
+
 void VsaVisitor::visitAdd(BinaryOperator &I) {
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));

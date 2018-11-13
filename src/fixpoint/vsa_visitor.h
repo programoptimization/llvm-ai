@@ -68,6 +68,7 @@ public:
   /// Call and Invoke
   void visitCallInst(CallInst &I);
   // void visitInvokeInst(InvokeInst &I);
+  void visitReturnInst(ReturnInst &I);
 
   /// BinaryOperators
   void visitAdd(BinaryOperator &I);
