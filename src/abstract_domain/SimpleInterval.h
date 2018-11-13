@@ -88,7 +88,6 @@ public:
   std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>>
   subsetsForPredicateULT(SimpleInterval &A, SimpleInterval &B);
 
-
   /// icmp
   std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>>
   icmp(CmpInst::Predicate pred, unsigned numBits, AbstractDomain &other);
@@ -97,18 +96,16 @@ public:
   bool isWrapAround() const;
 
   // Conduct an overapproximated intersection of two intervals.
-  //shared_ptr<AbstractDomain> intersect(const SimpleInterval &A, const SimpleInterval &B);
   //shared_ptr<AbstractDomain> intersectWithBounds(const SimpleInterval &first,
   //                                               const SimpleInterval &second);
 
-  shared_ptr<AbstractDomain> leastUpperBound(AbstractDomain &other);
+  virtual shared_ptr<AbstractDomain> leastUpperBound(AbstractDomain& other);
+  virtual shared_ptr<AbstractDomain> intersect(AbstractDomain& other);
+  virtual shared_ptr<AbstractDomain> widen(AbstractDomain& other);
 
   DomainType getDomainType() const { return simpleInterval; };
 
-  // Widening
-  virtual shared_ptr<AbstractDomain> widen(AbstractDomain &other);
   virtual bool requiresWidening();
-
 
   /// Member functions
   unsigned getBitWidth() const { return bitWidth; }
@@ -140,6 +137,7 @@ private:
   SimpleInterval _srem(SimpleInterval const& o);
   SimpleInterval _leastUpperBound(SimpleInterval const& o);
   SimpleInterval _intersect(SimpleInterval const& o);
+  SimpleInterval _widen(SimpleInterval const& o);
   static void _icmp(CmpInst::Predicate pred, SimpleInterval a1, SimpleInterval a2, SimpleInterval* r1, SimpleInterval* r2);
   static SimpleInterval _icmp_ule_val(SimpleInterval a, APInt v);
   static SimpleInterval _icmp_ult_val(SimpleInterval a, APInt v);

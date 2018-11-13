@@ -132,6 +132,11 @@ APInt SimpleInterval::smin() const{
     SimpleInterval& o = static_cast<SimpleInterval&>(o_);               \
     return std::make_shared<SimpleInterval>(_##x(o, nuw, nsw));         \
   }
+#define SIMPLE_INTERVAL_WRAPPER3(x) \
+  shared_ptr<AbstractDomain> SimpleInterval::x(AbstractDomain &o_) {    \
+    SimpleInterval& o = static_cast<SimpleInterval&>(o_);               \
+    return std::make_shared<SimpleInterval>(_##x(o));                   \
+  }
 
 SIMPLE_INTERVAL_WRAPPER2(add)
 SIMPLE_INTERVAL_WRAPPER2(sub)
@@ -139,11 +144,9 @@ SIMPLE_INTERVAL_WRAPPER2(mul)
 SIMPLE_INTERVAL_WRAPPER(udiv)
 SIMPLE_INTERVAL_WRAPPER(urem)
 SIMPLE_INTERVAL_WRAPPER(srem)
-
-shared_ptr<AbstractDomain> SimpleInterval::leastUpperBound(AbstractDomain &o_) { \
-  SimpleInterval& o = static_cast<SimpleInterval&>(o_); 
-  return std::make_shared<SimpleInterval>(_leastUpperBound(o)); 
-}
+SIMPLE_INTERVAL_WRAPPER3(leastUpperBound)
+SIMPLE_INTERVAL_WRAPPER3(intersect)
+SIMPLE_INTERVAL_WRAPPER3(widen)
 
 SimpleInterval SimpleInterval::_add (SimpleInterval const& o, bool nuw, bool nsw) {
   if (isBot || o.isBot) return SimpleInterval();
@@ -580,66 +583,24 @@ bool SimpleInterval::isTop() const {
   }
 }
 
-shared_ptr<AbstractDomain> SimpleInterval::widen(AbstractDomain &other) {
-  //join
-  shared_ptr<AbstractDomain> ret = leastUpperBound(other);
+SimpleInterval SimpleInterval::_widen(SimpleInterval const& o) {
+  if (isBot) return o;
+  if (o.isBot) return *this;
 
-  if(ret->isBottom() || ret->isTop()){
-    return ret;
-  }
-  //check which direction expands
-  enum wideningDirection{ up, down, both, none };
-  auto wideningDir = none;
-  if(ret->getUMax() != getUMax()){
-    wideningDir = up;
-  }
-  if(ret->getUMin() != getUMin()){
-    if(wideningDir == up){
-      wideningDir = both;
-    }else{
-      wideningDir = down;
-    }
-  }
+  APInt incr = end - begin;;
+  if (incr.uge(APInt::getSignedMaxValue(bitWidth))) {
+    // Too large already, return true
+    return SimpleInterval(true, bitWidth);
+  } 
 
-  //widen
-  /*
-   * every time widening happens the interval doubles in size
-   * if the sizeIncrease is bigger than half of the available int the interval is set to top
-   */
-  APInt sizeIncrease = ret->getUMax() - ret->getUMin();
-  if (wideningDir == none || ret->getDomainType() != simpleInterval){
-    return ret;
-  }else{
-    APInt bound = APInt(sizeIncrease.getBitWidth(), 1);
-    switch (wideningDir){
-      case up:
-        bound = bound.shl(sizeIncrease.getBitWidth()-1);
-            if(sizeIncrease.ugt(bound)){
-              return SimpleInterval::create_top(sizeIncrease.getBitWidth());
-            }
-            //enlarge top
-            static_cast<SimpleInterval *>(ret.get())->end = static_cast<SimpleInterval *>(ret.get())->end + sizeIncrease;
-            break;
-      case down:
-        bound = bound.shl(sizeIncrease.getBitWidth()-1);
-            if(sizeIncrease.ugt(bound)){
-              return SimpleInterval::create_top(sizeIncrease.getBitWidth());
-            }
-            //enlarge top
-            static_cast<SimpleInterval *>(ret.get())->begin = static_cast<SimpleInterval *>(ret.get())->begin - sizeIncrease;
-            break;
-      case both:
-        bound = bound.shl(sizeIncrease.getBitWidth()-2);
-            if(sizeIncrease.ugt(bound)){
-              return SimpleInterval::create_top(sizeIncrease.getBitWidth());
-            }
-            //enlarge top & bottom by half size
-            static_cast<SimpleInterval *>(ret.get())->end = static_cast<SimpleInterval *>(ret.get())->end + sizeIncrease.lshr(1);
-            static_cast<SimpleInterval *>(ret.get())->begin = static_cast<SimpleInterval *>(ret.get())->begin - sizeIncrease.lshr(1);
-            break;
-    }
-  }
-  return ret;
+  // Widen the sides that changed
+  SimpleInterval r = _leastUpperBound(o);
+  int flags = (r.begin != begin) | (r.end != end) << 1;
+  incr.ashrInPlace(flags == 3 ? 1 : 0);
+  incr += incr.isNullValue(); // Always widen by at least 1
+  if (flags & 1) r.begin -= incr;
+  if (flags & 2) r.end   += incr;
+  return r;
 }
 
 bool SimpleInterval::requiresWidening() {
