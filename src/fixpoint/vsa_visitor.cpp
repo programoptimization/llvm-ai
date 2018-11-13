@@ -324,7 +324,23 @@ void VsaVisitor::visitCallInst(CallInst &I) {
 }
 
 void VsaVisitor::visitReturnInst(ReturnInst &I) {
-  //
+  auto currentBB = I.getParent();
+  auto returnValue = I.getReturnValue();
+  auto& currentCallHierarchy = getCurrentCallHierarchy();
+  auto& currentProgramPoints = getProgramPoints()[currentBB];
+
+  auto lastCallInstruction = currentCallHierarchy.getLastCallInstruction();
+  auto lastCallBB = lastCallInstruction->getParent();
+  auto lastCallHierarchy = getCurrentCallHierarchy(); // todo: shift the window to the left
+  auto& lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallBB];
+
+  auto returnDomain = currentProgramPoints.getAbstractValue(returnValue);
+  auto oldCallInstDomain = lastCallProgramPoints.getAbstractValue(lastCallInstruction);
+  auto newCallInstDomain = oldCallInstDomain->leastUpperBound(*returnDomain);
+
+  lastCallProgramPoints.put(*lastCallInstruction, newCallInstDomain);
+
+  worklist.push(WorkList::Item(lastCallHierarchy, lastCallBB));
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {
@@ -455,6 +471,10 @@ void VsaVisitor::print() const {
 
 std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints() {
   return programPoints[currentCallHierarchy];
+}
+
+std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints(const CallHierarchy& callHierarchy) {
+  return programPoints[callHierarchy];
 }
 
 std::map<BasicBlock *, State> const &VsaVisitor::getProgramPoints() const {

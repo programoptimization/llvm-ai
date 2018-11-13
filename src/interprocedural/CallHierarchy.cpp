@@ -27,6 +27,14 @@ llvm::Function *CallHierarchy::getCurrentFunction() const {
 bool CallHierarchy::operator==(CallHierarchy const &other) const {
   return (mainFunction == other.mainFunction) && (callInsts == other.callInsts);
 }
+
+llvm::CallInst *CallHierarchy::getLastCallInstruction() const {
+  if (callInsts.empty()) {
+    return nullptr;
+  }
+
+  return callInsts.back();
+}
 } // namespace pcpo
 
 size_t std::hash<pcpo::CallHierarchy>::

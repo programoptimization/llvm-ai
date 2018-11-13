@@ -23,11 +23,14 @@ public:
   /// currently inside in.
   llvm::Function *getCurrentFunction() const;
 
+  /// Returns nullptr when in main function.
+  llvm::CallInst *getLastCallInstruction() const;
+
   bool operator==(CallHierarchy const &other) const;
 
 private:
   llvm::Function *mainFunction;
-  std::vector<llvm::CallInst *> callInsts;
+  std::deque<llvm::CallInst *> callInsts;
 };
 } // namespace pcpo
 

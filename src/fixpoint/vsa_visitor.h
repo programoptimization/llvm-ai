@@ -102,6 +102,7 @@ public:
   /// return the program points
   std::map<BasicBlock *, State> &getProgramPoints();
   std::map<BasicBlock *, State> const& getProgramPoints() const;
+  std::map<BasicBlock *, State> &getProgramPoints(const CallHierarchy& callHierarchy);
 
   void setCurrentCallHierarchy(CallHierarchy callHierarchy) {
     this->currentCallHierarchy = std::move(callHierarchy);
