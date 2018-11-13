@@ -15,6 +15,8 @@ src/interprocedural/ReturnDomainJoin.h
 src/interprocedural/ReturnDomainJoin.cpp
 src/interprocedural/CallHierarchy.h
 src/interprocedural/CallHierarchy.cpp
+src/interprocedural/CallStringDomain.h
+src/interprocedural/CallStringDomain.cpp
 src/interprocedural/CallStringMap.h
 src/interprocedural/CallStringMap.cpp
 src/interprocedural/CallStringArguments.h

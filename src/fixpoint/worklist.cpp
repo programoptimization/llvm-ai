@@ -4,21 +4,26 @@
 using namespace llvm;
 namespace pcpo {
 
-void WorkList::push(BasicBlock *bb) {
-  if (inWorklist.find(bb) == inWorklist.end()) {
-    worklist.push(bb);
-    inWorklist.insert(bb);
+void WorkList::push(Item item) {
+  if (inWorklist.find(&item) == inWorklist.end()) {
+    std::unique_ptr<Item> ptr(new Item(std::move(item)));
+
+    inWorklist.insert(ptr.get());
+    worklist.push(std::move(ptr));
   }
 }
 
-BasicBlock *WorkList::pop() {
-  auto temp = worklist.front();
-  inWorklist.erase(temp);
+WorkList::Item WorkList::pop() {
+  std::unique_ptr<Item> temp = std::move(worklist.front());
+  inWorklist.erase(temp.get());
   worklist.pop();
-  return temp;
+  return std::move(*temp);
 }
 
-BasicBlock *WorkList::peek() { return worklist.front(); }
+WorkList::Item const& WorkList::peek() {
+  // 
+  return *worklist.front();
+}
 
 bool WorkList::empty() { return worklist.empty(); }
-}
+} // namespace pcpo

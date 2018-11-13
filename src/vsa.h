@@ -17,7 +17,6 @@ using namespace llvm;
 using namespace pcpo;
 
 namespace {
-
 struct VsaPass : public ModulePass {
   // Pass identification, replacement for typeid
   static char ID;
@@ -32,8 +31,10 @@ struct VsaPass : public ModulePass {
 //    std::map<BasicBlock *, State> programPoints;
 //    VsaResult result;
 //  };
-    std::map<BasicBlock *, State> programPoints;
-    VsaResult result;
+
+  std::map<CallHierarchy, std::map<BasicBlock *, State>> programPoints;
+
+  VsaResult result;
 
 
 public:
@@ -63,12 +64,10 @@ public:
 //    auto vsaResult = VsaResult(programPoints);
 //    CallHierarchy<LocalData> hierarchy(current_function, vsaResult);
 
-    CallHierarchy hierarchy(current_function);
-
     programPoints.clear();
 
     VsaVisitor vis(worklist,
-                   hierarchy,
+                   CallHierarchy{current_function},
                    programPoints);
 
     /// get the first basic block and push it into the worklist

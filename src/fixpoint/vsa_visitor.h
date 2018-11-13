@@ -22,8 +22,8 @@ namespace pcpo {
 class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 
 public:
-  VsaVisitor(WorkList &q, CallHierarchy const& callHierarchy, std::map<BasicBlock *, State>& programPoints)
-      : worklist(q), currentCallHierarchy(callHierarchy), programPoints(programPoints), bcs(programPoints){};
+  VsaVisitor(WorkList &q, CallHierarchy callHierarchy, std::map<CallHierarchy, std::map<BasicBlock *, State>>& programPoints)
+      : worklist(q), currentCallHierarchy(std::move(callHierarchy)), programPoints(programPoints), bcs(programPoints){};
 
   /// create lub of states of preceeding basic blocks and use it as newState;
   /// the visitor automatically visits all instructions of this basic block
@@ -99,6 +99,7 @@ public:
 
   /// return the program points
   std::map<BasicBlock *, State> &getProgramPoints();
+  std::map<BasicBlock *, State> const& getProgramPoints() const;
 
 private:
   /// push directly reachable basic blocks onto worklist
@@ -106,8 +107,6 @@ private:
 
   void putBothBranchConditions(BranchInst& I, Value* op,
     std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>> &valuePair);
-
-  pcpo::CallHierarchy const &currentCallHierarchy;
 
   /// Returns the current call hierarchy
   pcpo::CallHierarchy const &getCurrentCallHierarchy() {
@@ -128,7 +127,8 @@ private:
 
   // TODO move this state out of the visitor
   WorkList &worklist;
-  std::map<BasicBlock *, State> &programPoints;
+  pcpo::CallHierarchy currentCallHierarchy;
+  std::map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
   /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
 };
 } // namespace pcpo

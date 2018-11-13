@@ -14,7 +14,12 @@ using std::shared_ptr;
 const int OUTPUT_BASE = 10;
 const int OUTPUT_SIGNED = false;
 
-enum DomainType { stridedInterval, boundedSet, compositeDomain };
+enum DomainType {
+  stridedInterval,
+  boundedSet,
+  compositeDomain,
+  callStringDomain
+};
 
 class AbstractDomain : public std::enable_shared_from_this<AbstractDomain> {
 public:

@@ -9,9 +9,7 @@
 static const size_t CSA_DEPTH = 1;
 
 namespace pcpo {
-
 class CallHierarchy {
-
 public:
   explicit CallHierarchy(llvm::Function *mainFunction,
                          std::deque<llvm::CallInst *> callInsts = {})
@@ -34,6 +32,11 @@ public:
       // Otherwise return the current function we are inside
       return callInsts.back()->getCalledFunction();
     }
+  }
+
+  bool operator==(CallHierarchy const &other) const {
+    return (mainFunction == other.mainFunction) &&
+           (callInsts == other.callInsts);
   }
 
 private:

@@ -29,8 +29,8 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
   /// least upper bound with all predecessors
   for (const auto pred : predecessors(&BB)) {
     DEBUG_OUTPUT("visitBasicBlock: pred " << pred->getName() << " found");
-    const auto incoming = programPoints.find(pred);
-    if (incoming != programPoints.end()) {
+    const auto incoming = getProgramPoints().find(pred);
+    if (incoming != getProgramPoints().end()) {
       if (incoming->second.isBottom()) /// case 1: lub(x, bottom) = x
         continue;
       /// else state is not bottom
@@ -39,8 +39,8 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
 
       /// apply condition and check if basic block is reachable from previous
       /// block under application of the condition
-      if(bcs.applyCondition(pred, &BB))
-          newState.leastUpperBound(incoming->second);
+      if (bcs.applyCondition(pred, &BB))
+        newState.leastUpperBound(incoming->second);
       // else : not reachable -> do not take lub
       bcs.unApplyCondition(pred);
     }
@@ -50,7 +50,7 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
   /// guaranteed to be in the state)
   if (numPreds > 1) {
     newState.prune(
-        programPoints
+        getProgramPoints()
             [getCurrentDominatorTree().getNode(&BB)->getIDom()->getBlock()]);
   }
 
@@ -63,8 +63,8 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
 void VsaVisitor::visitTerminatorInst(TerminatorInst &I) {
   DEBUG_OUTPUT("visitTerminationInst: entered");
   const auto currentBB = I.getParent();
-  const auto oldState = programPoints.find(currentBB);
-  if (oldState != programPoints.end()) {
+  const auto oldState = getProgramPoints().find(currentBB);
+  if (oldState != getProgramPoints().end()) {
     DEBUG_OUTPUT("visitTerminationInst: old state found");
 
     assert(!oldState->second.isBottom() && "Pruning with bottom!");
@@ -85,7 +85,7 @@ void VsaVisitor::visitTerminatorInst(TerminatorInst &I) {
     } /// else: state has changed
   } else {
     DEBUG_OUTPUT("visitTerminationInst: old state not found");
-    programPoints[currentBB] = newState;
+    getProgramPoints()[currentBB] = newState;
   }
 
   DEBUG_OUTPUT(
@@ -165,26 +165,27 @@ void VsaVisitor::visitSwitchInst(SwitchInst &I) {
   /// every case that we visit
   auto values = newState.getAbstractValue(cond);
 
-  std::map<BasicBlock*, std::shared_ptr<AbstractDomain>> tempConditions;
+  std::map<BasicBlock *, std::shared_ptr<AbstractDomain>> tempConditions;
 
   for (const auto &kase : I.cases()) {
 
     AD_TYPE kaseConst(kase.getCaseValue()->getValue());
 
-    /// split values into those take compare == with the constant (none or one value) and those that
-    /// do not (the rest)
-    const auto kaseVals = values->icmp(CmpInst::Predicate::ICMP_EQ,
-                          kase.getCaseValue()->getType()->getIntegerBitWidth(),
-                          kaseConst);
+    /// split values into those take compare == with the constant (none or one
+    /// value) and those that do not (the rest)
+    const auto kaseVals = values->icmp(
+        CmpInst::Predicate::ICMP_EQ,
+        kase.getCaseValue()->getType()->getIntegerBitWidth(), kaseConst);
 
     /// put branch condition in place
-    /// since several cases might jump to the same BB, we need to build it first and set it in another loop
+    /// since several cases might jump to the same BB, we need to build it first
+    /// and set it in another loop
     auto successor = kase.getCaseSuccessor();
-    if(tempConditions.find(successor) != tempConditions.end()) {
+    if (tempConditions.find(successor) != tempConditions.end()) {
       // value present -> compute LUB
-      tempConditions[successor] = tempConditions[successor]->leastUpperBound(*kaseVals.first);
-    }
-    else {
+      tempConditions[successor] =
+          tempConditions[successor]->leastUpperBound(*kaseVals.first);
+    } else {
       // no value present -> put
       tempConditions[successor] = kaseVals.first;
     }
@@ -196,15 +197,14 @@ void VsaVisitor::visitSwitchInst(SwitchInst &I) {
   // put default condition
   auto defaultSuccessor = I.getDefaultDest();
 
-  if(tempConditions.find(defaultSuccessor) != tempConditions.end()) {
-      // value present -> compute LUB
-    tempConditions[defaultSuccessor] = tempConditions[defaultSuccessor]->leastUpperBound(*values);
-  }
-  else {
+  if (tempConditions.find(defaultSuccessor) != tempConditions.end()) {
+    // value present -> compute LUB
+    tempConditions[defaultSuccessor] =
+        tempConditions[defaultSuccessor]->leastUpperBound(*values);
+  } else {
     // no value present -> put
     tempConditions[defaultSuccessor] = values;
   }
-
 
   for (const auto &kase : I.cases()) {
     /// put branch condition in place
@@ -213,8 +213,8 @@ void VsaVisitor::visitSwitchInst(SwitchInst &I) {
   }
 
   // put default condition
-  bcs.putBranchConditions(I.getParent(), I.getDefaultDest(), cond, tempConditions[I.getDefaultDest()]);
-
+  bcs.putBranchConditions(I.getParent(), I.getDefaultDest(), cond,
+                          tempConditions[I.getDefaultDest()]);
 
   /// continue as if it were a simple terminator
   visitTerminatorInst(I);
@@ -255,11 +255,11 @@ void VsaVisitor::visitPHINode(PHINode &I) {
     const auto incomingBlock = *blocks_iterator;
 
     /// block has not been visited yet -> implicit bottom -> continue
-    if (programPoints.find(incomingBlock) == programPoints.end())
+    if (getProgramPoints().find(incomingBlock) == getProgramPoints().end())
       continue;
 
     /// explicit bottom -> continue
-    if (programPoints[incomingBlock].isBottom())
+    if (getProgramPoints()[incomingBlock].isBottom())
       continue;
 
     /// Check if this is an instruction
@@ -268,7 +268,7 @@ void VsaVisitor::visitPHINode(PHINode &I) {
       /// from the basic block containing the instruction
       bcs.applyCondition(incomingBlock, I.getParent());
 
-      newValue = programPoints[incomingBlock].getAbstractValue(val);
+      newValue = getProgramPoints()[incomingBlock].getAbstractValue(val);
 
       /// reset the condition cache
       bcs.unApplyCondition(incomingBlock);
@@ -291,7 +291,13 @@ void VsaVisitor::visitPHINode(PHINode &I) {
   newState.put(I, bs);
 }
 
-void VsaVisitor::visitCallInst(CallInst &I) {}
+void VsaVisitor::visitCallInst(CallInst &I) {
+  // TODO
+  for (llvm::Value* args: I.arg_operands())
+  {
+    llvm::outs() << args << "\n";
+  }
+}
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
@@ -412,14 +418,18 @@ void VsaVisitor::pushSuccessors(TerminatorInst &I) {
 }
 
 void VsaVisitor::print() const {
-  for (const auto &pp : programPoints) {
+  for (const auto &pp : getProgramPoints()) {
     STD_OUTPUT("VsaVisitor::print():" << pp.first->getName());
     pp.second.print();
   }
 }
 
 std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints() {
-  return programPoints;
+  return programPoints[currentCallHierarchy];
+}
+
+std::map<BasicBlock *, State> const &VsaVisitor::getProgramPoints() const {
+  return programPoints[currentCallHierarchy];
 }
 
 DominatorTree const &VsaVisitor::getCurrentDominatorTree() {

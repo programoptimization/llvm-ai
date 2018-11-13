@@ -1,6 +1,7 @@
 #ifndef LLVM_CALLSTRINGMAP_H
 #define LLVM_CALLSTRINGMAP_H
 
+#include "../abstract_domain/AbstractDomain.h"
 #include "CallHierarchy.h"
 #include "CallStringArguments.h"
 #include <map>
@@ -13,6 +14,11 @@ class CallStringMap {
 
 public:
   CallStringMap() = default;
+
+  std::shared_ptr<AbstractDomain> getReturnDomain(CallStringArguments args) {
+    // Handle deadloops here somehow
+    return nullptr;
+  }
 };
 
 } // namespace pcpo
