@@ -39,19 +39,12 @@ public:
 } // namespace
 
 std::shared_ptr<AbstractDomain>
-joinReturnDomain(std::map<BasicBlock *, State> &program_points) {
-  std::shared_ptr<AbstractDomain> return_domain;
-
+joinReturnDomain(std::map<BasicBlock *, State> &program_points,
+                 std::shared_ptr<AbstractDomain> return_domain) {
   for (auto &&entry : program_points) {
     BasicBlock *block = entry.first;
 
     ReturnDomainVisitor visitor(program_points, block, return_domain);
     visitor.visit(block);
   }
-
-  if (return_domain) {
-    return return_domain;
-  }
-
-  llvm_unreachable("Expected the return domain to be present!");
 }

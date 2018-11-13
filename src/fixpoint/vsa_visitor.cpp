@@ -330,6 +330,12 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   auto& currentProgramPoints = getProgramPoints()[currentBB];
 
   auto lastCallInstruction = currentCallHierarchy.getLastCallInstruction();
+
+  // When the return is in a main, there is no last call.
+  if (lastCallInstruction == nullptr) {
+    return;
+  }
+
   auto lastCallBB = lastCallInstruction->getParent();
   auto lastCallHierarchy = getCurrentCallHierarchy(); // todo: shift the window to the left
   auto& lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallBB];

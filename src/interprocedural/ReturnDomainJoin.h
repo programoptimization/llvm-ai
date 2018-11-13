@@ -15,6 +15,7 @@ class BasicBlock;
 }
 
 std::shared_ptr<pcpo::AbstractDomain>
-joinReturnDomain(std::map<BasicBlock *, pcpo::State> const &program_points);
+joinReturnDomain(std::map<BasicBlock *, pcpo::State> const &program_points,
+                 std::shared_ptr<pcpo::AbstractDomain> return_domain);
 
 #endif // RETURN_DOMAIN_JOIN_H_

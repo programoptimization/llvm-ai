@@ -5,6 +5,7 @@
 #include "fixpoint/vsa_visitor.h"
 #include "fixpoint/worklist.h"
 #include "interprocedural/CallHierarchy.h"
+#include "interprocedural/ReturnDomainJoin.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
@@ -103,6 +104,13 @@ public:
         errs() << "\n";
       }
     }
+
+    auto mainReturnDomain = AD_TYPE::create_top(current_function->getReturnType()->getIntegerBitWidth());
+
+    joinReturnDomain(programPoints[initCallHierarchy], mainReturnDomain);
+
+    // todo: Use `mainReturnDomain` to create VsaResult object
+
     // Our analysis does not change the IR
     return false;
   }
