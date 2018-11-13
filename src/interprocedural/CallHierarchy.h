@@ -2,10 +2,13 @@
 #define CALL_HIERARCHY_H_
 
 #include <cassert>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/Instructions.h>
 #include <utility>
 #include <vector>
+
+namespace llvm {
+class Function;
+class CallInst;
+} // namespace llvm
 
 namespace pcpo {
 class CallHierarchy {
@@ -26,8 +29,14 @@ public:
   /// Returns true when we are currently iside the main function
   bool isInMainFunction() const;
 
-  /// Appends the CallInstruction to the current call hierarchy
-  CallHierarchy append(llvm::CallInst *callInst) const;
+  /// Returns the height of the current hierarchy
+  std::size_t size() const;
+
+  /// Pushes the CallInstruction to the current call hierarchy
+  CallHierarchy push(llvm::CallInst *callInst) const;
+
+  /// Pops frame_count frames from the hierarchy
+  CallHierarchy pop(std::size_t frame_count = 1U) const;
 
   /// Gets the current top function of the hierarchy we are
   /// currently inside in.

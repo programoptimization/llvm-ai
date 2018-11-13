@@ -2,18 +2,36 @@
 #include "CallHierarchy.h"
 #include "Hash.h"
 #include <algorithm>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
 
 static std::size_t const callStringDepth = 1;
 
 namespace pcpo {
 bool CallHierarchy::isInMainFunction() const { return callInsts.empty(); }
 
-CallHierarchy CallHierarchy::append(llvm::CallInst *callInst) const {
+std::size_t CallHierarchy::size() const {
+  return std::distance(callInstructionsBegin(), callInstructionsEnd());
+}
+
+CallHierarchy CallHierarchy::push(llvm::CallInst *callInst) const {
   auto newCallInsts = callInsts;
   newCallInsts.push_back(callInst);
 
   auto newOffset = std::max(std::int64_t(0), std::int64_t(newCallInsts.size()) -
                                                  std::int64_t(callStringDepth));
+
+  return CallHierarchy(mainFunction, std::move(newCallInsts), newOffset);
+}
+
+CallHierarchy CallHierarchy::pop(std::size_t frame_count) const {
+  assert(frame_count <= size());
+
+  auto end = callInsts.end();
+  std::advance(end, -frame_count);
+  CallInstructions newCallInsts(callInsts.begin(), end);
+
+  std::size_t newOffset = 0;
 
   return CallHierarchy(mainFunction, std::move(newCallInsts), newOffset);
 }
@@ -34,21 +52,14 @@ bool CallHierarchy::operator==(CallHierarchy const &other) const {
     return mainFunction == other.mainFunction;
   }
 
-  auto const begin = callInstructionsBegin();
-  auto const end = callInstructionsEnd();
-  auto const size = std::distance(begin, end);
-
-  auto const otherBegin = other.callInstructionsBegin();
-  auto const otherEnd = other.callInstructionsEnd();
-  auto const otherSize = std::distance(otherBegin, otherEnd);
-
-  /// The hierarchy depth of both hierarchies doesn't match
-  if (size != otherSize) {
+  /// The hierarchy depth of both hierarchies don't match
+  if (size() != other.size()) {
     return false;
   }
 
   /// Check whether both hierarchies match
-  return std::equal(begin, end, otherBegin);
+  return std::equal(callInstructionsBegin(), callInstructionsEnd(),
+                    other.callInstructionsBegin());
 }
 
 CallHierarchy::CallInstructions::const_iterator
