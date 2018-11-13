@@ -11,16 +11,17 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
 
   /// bb has no predecessors: return empty state which is not bottom!
   /// and insert values s.t. arg -> T
-  const int numPreds = std::distance(pred_begin(&BB), pred_end(&BB));
+  const auto numPreds = std::distance(pred_begin(&BB), pred_end(&BB));
   if (numPreds == 0) {
     /// mark state such that it is not bottom any more
     newState.markVisited();
 
     for (auto &arg : BB.getParent()->args()) {
-      /// put top for all arguments
-      if (arg.getType()->isIntegerTy())
-        newState.put(arg,
-                     AD_TYPE::create_top(arg.getType()->getIntegerBitWidth()));
+      if (arg.getType()->isIntegerTy()) {
+        auto argumentDomain = getProgramPoints()[&BB].getAbstractValue(&arg);
+
+        newState.put(arg, argumentDomain);
+      }
     }
 
     return;
@@ -311,6 +312,7 @@ void VsaVisitor::visitCallInst(CallInst &I) {
 
     auto& functionParam = *functionParamIt;
 
+    // If there is no old domain, we get top.
     auto oldParamDomain = getProgramPoints()[&calleeBB].getAbstractValue(&functionParam);
     auto argDomain = getProgramPoints()[callerBB].getAbstractValue(functionArgValue);
     auto newDomain = oldParamDomain->leastUpperBound(*argDomain);
