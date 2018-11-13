@@ -17,7 +17,7 @@ bool State::put(Value &v, std::shared_ptr<AbstractDomain> ad) {
     return true;
   }
 
-  DEBUG_OUTPUT("State::put for " << v.getName());
+  DEBUG_OUTPUT("State::put for " << v.getName() << " with " << *ad);
   if (vars.find(&v) != vars.end()) {
     if (*ad<=(*vars[&v])) {
       return false;
@@ -172,11 +172,14 @@ void State::print() const {
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream &strm, const State &state) {
     if(state.bottom) {
-        return strm << "bottom";
+        return strm << "  bottom";
     }
     for (const auto &var : state.vars) {
-        
-        strm << *var.first << " -- " << *var.second << "\n";
+        if(var.first->getName().str().compare("") == 0){
+          strm << "  VARIABLE NAME NOT FOUND -- " << *var.second << "\n";
+        }{
+          strm << "  " << var.first->getName() << " -- " << *var.second << "\n";
+        }
     }
     return strm;
 }

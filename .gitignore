@@ -5,6 +5,9 @@
 /release
 /Release
 /RelWithDebInfo
+philipp
+samples/philipp*
+**/*~
 
 /debug
 /Debug

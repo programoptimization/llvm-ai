@@ -1275,7 +1275,7 @@ bool StridedInterval::operator<=(AbstractDomain &other) {
   }
 }
 
-bool StridedInterval::contains(APInt &value) const {
+bool StridedInterval::contains(APInt value) const {
   assert(value.getBitWidth() == bitWidth);
 
   if (value.getBitWidth() != bitWidth)
@@ -1380,6 +1380,7 @@ shared_ptr<AbstractDomain> StridedInterval::widen(AbstractDomain &other) {
         //enlarge top & bottom by half size
         static_cast<StridedInterval *>(ret.get())->end = static_cast<StridedInterval *>(ret.get())->end + sizeIncrease.lshr(1);
         static_cast<StridedInterval *>(ret.get())->begin = static_cast<StridedInterval *>(ret.get())->begin - sizeIncrease.lshr(1);
+      default:
         break;
     }
   }
