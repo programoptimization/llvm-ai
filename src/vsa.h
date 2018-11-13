@@ -34,7 +34,7 @@ struct VsaPass : public ModulePass {
 
   std::map<CallHierarchy, std::map<BasicBlock *, State>> programPoints;
 
-  //VsaResult result;
+//  VsaResult result;
 
 
 public:
@@ -131,7 +131,7 @@ public:
     AU.setPreservesAll();
   }
 
-  VsaResult &getResult() { return result; }
+//  VsaResult &getResult() { return result; }
 };
 
 char VsaPass::ID = 0;

@@ -39,6 +39,11 @@ public:
            (callInsts == other.callInsts);
   }
 
+  // Todo: Why the hell is this needed?
+  bool operator<(CallHierarchy const& other) const {
+    return (mainFunction < other.mainFunction) || (callInsts < other.callInsts);
+  }
+
 private:
   llvm::Function *mainFunction;
   std::deque<llvm::CallInst *> callInsts;

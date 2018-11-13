@@ -39,10 +39,10 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
 
       /// apply condition and check if basic block is reachable from previous
       /// block under application of the condition
-      if (bcs.applyCondition(pred, &BB))
-        newState.leastUpperBound(incoming->second);
-      // else : not reachable -> do not take lub
-      bcs.unApplyCondition(pred);
+//      if (bcs.applyCondition(pred, &BB))
+//        newState.leastUpperBound(incoming->second);
+//       else : not reachable -> do not take lub
+//      bcs.unApplyCondition(pred);
     }
   }
 
@@ -149,13 +149,13 @@ void VsaVisitor::putBothBranchConditions(
   DEBUG_OUTPUT("T-r: " << *valuePair.first);
   DEBUG_OUTPUT("F-r: " << *valuePair.second);
 
-  /// true
-  bcs.putBranchConditions(
-      I.getParent() /*the current basic block in which we are*/,
-      I.getSuccessor(0) /*the target basic block*/, op, valuePair.first);
-  /// false
-  bcs.putBranchConditions(I.getParent(), I.getSuccessor(1), op,
-                          valuePair.second);
+//  /// true
+//  bcs.putBranchConditions(
+//      I.getParent() /*the current basic block in which we are*/,
+//      I.getSuccessor(0) /*the target basic block*/, op, valuePair.first);
+//  /// false
+//  bcs.putBranchConditions(I.getParent(), I.getSuccessor(1), op,
+//                          valuePair.second);
 }
 
 void VsaVisitor::visitSwitchInst(SwitchInst &I) {
@@ -206,15 +206,15 @@ void VsaVisitor::visitSwitchInst(SwitchInst &I) {
     tempConditions[defaultSuccessor] = values;
   }
 
-  for (const auto &kase : I.cases()) {
-    /// put branch condition in place
-    bcs.putBranchConditions(I.getParent(), kase.getCaseSuccessor(), cond,
-                            tempConditions[kase.getCaseSuccessor()]);
-  }
-
-  // put default condition
-  bcs.putBranchConditions(I.getParent(), I.getDefaultDest(), cond,
-                          tempConditions[I.getDefaultDest()]);
+//  for (const auto &kase : I.cases()) {
+//    /// put branch condition in place
+//    bcs.putBranchConditions(I.getParent(), kase.getCaseSuccessor(), cond,
+//                            tempConditions[kase.getCaseSuccessor()]);
+//  }
+//
+//  // put default condition
+//  bcs.putBranchConditions(I.getParent(), I.getDefaultDest(), cond,
+//                          tempConditions[I.getDefaultDest()]);
 
   /// continue as if it were a simple terminator
   visitTerminatorInst(I);
@@ -266,12 +266,12 @@ void VsaVisitor::visitPHINode(PHINode &I) {
     if (Instruction::classof(val)) {
       /// apply the conditions that we have for reaching this basic block
       /// from the basic block containing the instruction
-      bcs.applyCondition(incomingBlock, I.getParent());
+//      bcs.applyCondition(incomingBlock, I.getParent());
 
       newValue = getProgramPoints()[incomingBlock].getAbstractValue(val);
 
       /// reset the condition cache
-      bcs.unApplyCondition(incomingBlock);
+//      bcs.unApplyCondition(incomingBlock);
     } else {
       /// val is not an instruction but a constant etc., so we do not need to
       /// go to its basic block but can get it directly
@@ -410,8 +410,8 @@ void VsaVisitor::visitInstruction(Instruction &I) {
 void VsaVisitor::pushSuccessors(TerminatorInst &I) {
   // put all currently reachable successors into the worklist
   for (auto bb : I.successors()) {
-    if (!bcs.isBasicBlockReachable(I.getParent(), bb))
-      continue; // do not put it on the worklist now
+//    if (!bcs.isBasicBlockReachable(I.getParent(), bb))
+//      continue; // do not put it on the worklist now
     DEBUG_OUTPUT("\t-" << bb->getName());
     WorkList::Item item(getCurrentCallHierarchy(), bb);
     worklist.push(item);

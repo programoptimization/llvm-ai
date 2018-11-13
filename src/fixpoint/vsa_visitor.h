@@ -23,7 +23,7 @@ class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 
 public:
   VsaVisitor(WorkList &q, CallHierarchy callHierarchy, std::map<CallHierarchy, std::map<BasicBlock *, State>>& programPoints)
-      : worklist(q), currentCallHierarchy(std::move(callHierarchy)), programPoints(programPoints), bcs(programPoints){};
+      : worklist(q), currentCallHierarchy(std::move(callHierarchy)), programPoints(programPoints)/*, bcs(programPoints)*/{};
 
   /// create lub of states of preceeding basic blocks and use it as newState;
   /// the visitor automatically visits all instructions of this basic block
@@ -133,7 +133,7 @@ private:
   WorkList &worklist;
   pcpo::CallHierarchy currentCallHierarchy;
   std::map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
-  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
+//  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
 };
 } // namespace pcpo
 
