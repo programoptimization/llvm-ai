@@ -21,6 +21,7 @@ src/interprocedural/CallStringMap.h
 src/interprocedural/CallStringMap.cpp
 src/interprocedural/CallStringArguments.h
 src/interprocedural/CallStringArguments.cpp
+src/interprocedural/Hash.h
 src/CallStringPass.h
 src/CallStringPass.cpp
 src/vsa.h
@@ -43,6 +44,7 @@ src/api/vsa_result.h
 src/api/vsa_result.cpp
 src/api/vsa_result_value.h
 src/api/vsa_result_value.cpp
+src/util/util.h
 test/BoundedSetTest.cpp
 test/StridedIntervalTest.cpp
 test/CompositeDomainTest.cpp

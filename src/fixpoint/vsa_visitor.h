@@ -14,6 +14,7 @@
 #include "state.h"
 #include "worklist.h"
 #include <map>
+#include <unordered_map>
 
 using namespace llvm;
 
@@ -22,7 +23,7 @@ namespace pcpo {
 class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 
 public:
-  VsaVisitor(WorkList &q, CallHierarchy callHierarchy, std::map<CallHierarchy, std::map<BasicBlock *, State>>& programPoints)
+  VsaVisitor(WorkList &q, CallHierarchy callHierarchy, std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>>& programPoints)
       : worklist(q), currentCallHierarchy(std::move(callHierarchy)), programPoints(programPoints)/*, bcs(programPoints)*/{};
 
   /// create lub of states of preceeding basic blocks and use it as newState;
@@ -131,7 +132,7 @@ private:
   State newState;
   WorkList &worklist;
   pcpo::CallHierarchy currentCallHierarchy;
-  std::map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
+  std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
 //  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
 };
 } // namespace pcpo

@@ -35,8 +35,10 @@ private:
 
   struct ItemHasher {
     std::size_t operator()(Item const *item) const {
-      // TODO Implement the hash for this
-      return 0;
+      // Just hash witht he pointer of the BasicBlock,
+      // this will produce many hash collisions but it should be fine for now.
+      // TODO Implement a proper hash for this
+      return std::hash<void*>{}(item->block);
     }
   };
   struct ItemComparator {

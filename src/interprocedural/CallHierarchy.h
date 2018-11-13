@@ -5,50 +5,37 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 #include <queue>
-
-static const size_t CSA_DEPTH = 1;
+#include <vector>
+#include <utility>
 
 namespace pcpo {
 class CallHierarchy {
+  friend std::hash<CallHierarchy>;
+
 public:
   explicit CallHierarchy(llvm::Function *mainFunction,
                          std::deque<llvm::CallInst *> callInsts = {})
       : mainFunction(mainFunction), callInsts(std::move(callInsts)) {}
 
-  CallHierarchy append(llvm::CallInst *callInst) const {
-    auto newCallInsts = callInsts;
-    newCallInsts.push_back(callInst);
-    if (newCallInsts.size() > CSA_DEPTH) {
-      newCallInsts.pop_front();
-    }
-    return CallHierarchy(mainFunction, newCallInsts);
-  }
+  /// Appends the CallInstruction to the current call hierarchy
+  CallHierarchy append(llvm::CallInst *callInst) const;
 
-  llvm::Function *getCurrentFunction() const {
-    if (callInsts.empty()) {
-      // If we are in the main function return it
-      return mainFunction;
-    } else {
-      // Otherwise return the current function we are inside
-      return callInsts.back()->getCalledFunction();
-    }
-  }
+  /// Gets the current top function of the hierarchy we are
+  /// currently inside in.
+  llvm::Function *getCurrentFunction() const;
 
-  bool operator==(CallHierarchy const &other) const {
-    return (mainFunction == other.mainFunction) &&
-           (callInsts == other.callInsts);
-  }
-
-  // Todo: Why the hell is this needed?
-  bool operator<(CallHierarchy const& other) const {
-    return (mainFunction < other.mainFunction) || (callInsts < other.callInsts);
-  }
+  bool operator==(CallHierarchy const &other) const;
 
 private:
   llvm::Function *mainFunction;
-  std::deque<llvm::CallInst *> callInsts;
+  std::vector<llvm::CallInst *> callInsts;
 };
-
 } // namespace pcpo
+
+namespace std {
+template <> struct hash<pcpo::CallHierarchy> {
+  size_t operator()(pcpo::CallHierarchy const &hierarchy) const;
+};
+} // namespace std
 
 #endif // CALL_HIERARCHY_H_

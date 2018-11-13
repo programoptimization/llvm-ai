@@ -10,6 +10,7 @@
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
 #include <queue>
+#include <unordered_map>
 
 #include "llvm/IR/Dominators.h"
 
@@ -25,7 +26,7 @@ struct VsaPass : public ModulePass {
 
   WorkList worklist;
 
-  std::map<CallHierarchy, std::map<BasicBlock *, State>> programPoints;
+  std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> programPoints;
 
 //  VsaResult result;
 
