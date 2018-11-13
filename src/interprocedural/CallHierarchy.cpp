@@ -31,5 +31,5 @@ bool CallHierarchy::operator==(CallHierarchy const &other) const {
 
 size_t std::hash<pcpo::CallHierarchy>::
 operator()(pcpo::CallHierarchy const& hierarchy) const {
-  return pcpo::multiHash(hierarchy.mainFunction, hierarchy.callInsts);
+  return 0; //  pcpo::multiHash(hierarchy.mainFunction, hierarchy.callInsts);
 }

@@ -5,7 +5,6 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 #include <queue>
-#include <vector>
 #include <utility>
 
 namespace pcpo {

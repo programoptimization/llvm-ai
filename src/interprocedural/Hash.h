@@ -25,7 +25,6 @@ template <typename... T> std::size_t HashArguments(T &&... args) {
 
 /// Returns a combined hash for all the given arguments
 template <typename Iterator>
-template <typename... T>
 std::size_t HashRange(Iterator begin, Iterator end) {
   std::size_t seed = 0;
   auto itr = begin;
