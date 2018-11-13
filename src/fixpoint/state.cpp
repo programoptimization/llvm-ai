@@ -172,11 +172,14 @@ void State::print() const {
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream &strm, const State &state) {
     if(state.bottom) {
-        return strm << "bottom";
+        return strm << "  bottom";
     }
     for (const auto &var : state.vars) {
-        
-        strm << *var.first << " -- " << *var.second << "\n";
+        if(var.first->getName().str().compare("") == 0){
+          strm << "  VARIABLE NAME NOT FOUND -- " << *var.second << "\n";
+        }{
+          strm << "  " << var.first->getName() << " -- " << *var.second << "\n";
+        }
     }
     return strm;
 }
