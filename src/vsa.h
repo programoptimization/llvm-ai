@@ -28,18 +28,18 @@ struct VsaPass : public ModulePass {
 
 //  struct LocalData {
 //    // map of programPoints
-//    std::map<BasicBlock *, State> programPoints;
+//    std::map<BasicBlock *, State< programPoints;
 //    VsaResult result;
 //  };
 
   std::map<CallHierarchy, std::map<BasicBlock *, State>> programPoints;
 
-  VsaResult result;
+  //VsaResult result;
 
 
 public:
   VsaPass(bool do_print = false)
-      : ModulePass(ID), do_print(do_print), worklist(), programPoints(), result(programPoints) {}
+      : ModulePass(ID), do_print(do_print), worklist(), programPoints() {}
 
   bool doInitialization(Module &m) override {
     return ModulePass::doInitialization(m);
@@ -66,12 +66,13 @@ public:
 
     programPoints.clear();
 
+    CallHierarchy initCallHierarchy{current_function};
     VsaVisitor vis(worklist,
-                   CallHierarchy{current_function},
+                   initCallHierarchy,
                    programPoints);
 
     /// get the first basic block and push it into the worklist
-    worklist.push(&current_function->front());
+    worklist.push(WorkList::Item(initCallHierarchy, &current_function->front()));
 
     int visits = 0;
 
@@ -83,9 +84,11 @@ public:
     // are available (the visitor pushes new instructions query-based)
     while (!worklist.empty()) {
 
-      trance[std::string(worklist.peek()->getName())].push_back(visits);
+      auto item = worklist.pop();
+      trance[std::string(item.block->getName())].push_back(visits);
 
-      vis.visit(*worklist.pop());
+      vis.setCurrentCallHierarchy(item.hierarchy);
+      vis.visit(item.block);
 #ifdef DEBUG
       print_local(vis, visits);
 #endif

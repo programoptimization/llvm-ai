@@ -101,6 +101,10 @@ public:
   std::map<BasicBlock *, State> &getProgramPoints();
   std::map<BasicBlock *, State> const& getProgramPoints() const;
 
+  void setCurrentCallHierarchy(CallHierarchy callHierarchy) {
+    this->currentCallHierarchy = callHierarchy;
+  }
+
 private:
   /// push directly reachable basic blocks onto worklist
   void pushSuccessors(TerminatorInst &I);

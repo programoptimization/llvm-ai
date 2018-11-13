@@ -16,6 +16,9 @@ public:
   struct Item {
     CallHierarchy hierarchy;
     BasicBlock *block;
+
+    Item(CallHierarchy hierarchy, BasicBlock *block)
+      : hierarchy(std::move(hierarchy)), block(block) {}
   };
 
   void push(Item item);
