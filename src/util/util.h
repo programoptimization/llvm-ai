@@ -6,16 +6,18 @@
 #include "../abstract_domain/BoundedSet.h"
 #include "../abstract_domain/CompositeDomain.h"
 #include "../abstract_domain/StridedInterval.h"
+#include "../abstract_domain/SimpleInterval.h"
 /// settings
 
 /// should debug output enabled?
-//#define DEBUG
+#define DEBUG
 #define VISUAL_DEBUG
 
 /// type of abstract domain
 //#define AD_TYPE BoundedSet
-#define AD_TYPE StridedInterval
-//define AD_TYPE CompositeDomain
+//#define AD_TYPE StridedInterval
+//#define AD_TYPE CompositeDomain
+#define AD_TYPE SimpleInterval
 
 /// how many changes do we allow before we apply widening (for ADs in which it is reuired)
 #define WIDENING_AFTER 1

@@ -35,7 +35,7 @@ private:
   VsaResult result;
 public:
 
-  VsaPass(bool do_print = false)
+  VsaPass(bool do_print = true)
       : FunctionPass(ID), do_print(do_print), worklist(),
         result(programPoints) {}
 
@@ -80,7 +80,11 @@ public:
 #ifdef VISUAL_DEBUG
         errs() << "Run " << visits << ":\n";
         for (auto bbAndState : programPoints){
-            errs() << " BB " << bbAndState.first->front() << "\n";
+            if(bbAndState.first->getName().str().compare("") == 0){
+                errs() << " BB " << "NAME NOT FOUND - USE COMPILED VERSION OF CLANG\n";
+            }else{
+                errs() << " BB " << bbAndState.first->getName() << "\n";
+            }
             errs() << bbAndState.second << "\n";
         }
         errs() << "\n";

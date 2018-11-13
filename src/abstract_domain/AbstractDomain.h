@@ -14,7 +14,7 @@ using std::shared_ptr;
 const int OUTPUT_BASE = 10;
 const int OUTPUT_SIGNED = false;
 
-enum DomainType { stridedInterval, boundedSet, compositeDomain };
+enum DomainType { stridedInterval, boundedSet, compositeDomain, simpleInterval };
 
 class AbstractDomain {
 public:
@@ -61,7 +61,7 @@ public:
   icmp(CmpInst::Predicate pred, unsigned numBits, AbstractDomain &other) = 0;
 
   /// Member functions
-  virtual bool contains(APInt &value) const = 0;
+  virtual bool contains(APInt value) const = 0;
   virtual unsigned getBitWidth()const = 0;
   virtual bool isTop() const = 0;
   virtual bool isBottom() const = 0;

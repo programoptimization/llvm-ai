@@ -1,5 +1,6 @@
-#ifndef STRIDED_INTERVAL_H_
-#define STRIDED_INTERVAL_H_
+#ifndef SIMPLE_INTERVAL_H_
+#define SIMPLE_INTERVAL_H_
+#include <cstdint>
 #include <llvm/ADT/APInt.h>
 #include <functional>
 #include <iostream>
@@ -11,39 +12,44 @@
 namespace pcpo {
 using llvm::APInt;
 
-class StridedInterval : public AbstractDomain {
-
+class SimpleInterval : public AbstractDomain {
+private:
+  void debug_break() {
+    // You can set a breakpoint here
+    debug_id = debug_id;
+  }
+  
 public:
 
   /// Constructor: Bottom
-  StridedInterval() : isBot(true) {}
+  SimpleInterval() : isBot(true), debug_id(++debug_id_gen) {debug_break();}
   /// Constructor: Top
-  StridedInterval(bool isTop, unsigned bitWidth);
+  SimpleInterval(bool isTop, unsigned bitWidth);
   /// Constructor: Constant
-  StridedInterval(APInt value);
+  SimpleInterval(APInt value);
   /// Constructor: Interval with APInt
-  StridedInterval(APInt begin, APInt end, APInt stride);
+  SimpleInterval(APInt begin, APInt end);
   /// Constructor: Interval with uint64_t
-  StridedInterval(unsigned bitWidth, uint64_t begin, uint64_t end, uint64_t stride);
-  //StridedInterval(unsigned numBits, std::initializer_list<uint64_t> vals);
+  SimpleInterval(unsigned bitWidth, uint64_t begin, uint64_t end);
+  //SimpleInterval(unsigned numBits, std::initializer_list<uint64_t> vals);
   /// Constructor: From BoundedSet
-  StridedInterval(BoundedSet &set);
+  SimpleInterval(BoundedSet &set);
 
   /// Bottom SI
   static shared_ptr<AbstractDomain> create_bottom(unsigned bitWidth)
-      { return std::shared_ptr<AbstractDomain>(new StridedInterval(false, bitWidth)); }
+      { return std::shared_ptr<AbstractDomain>(new SimpleInterval(false, bitWidth)); }
   /// Top SI
   static shared_ptr<AbstractDomain> create_top(unsigned bitWidth)
-      { return std::shared_ptr<AbstractDomain>(new StridedInterval(true, bitWidth)); }
+      { return std::shared_ptr<AbstractDomain>(new SimpleInterval(true, bitWidth)); }
 
   /// Copy constructor
-  StridedInterval(const StridedInterval& other);
+  SimpleInterval(const SimpleInterval& other);
   /// Copy assignment
-  StridedInterval& operator=(const StridedInterval& other) = default;
+  SimpleInterval& operator=(const SimpleInterval& other) = default;
 
   /// Comparison Operators
-  bool operator==(const StridedInterval &other);
-  bool operator!=(const StridedInterval &other) {return !(operator==(other));}
+  bool operator==(const SimpleInterval &other);
+  bool operator!=(const SimpleInterval &other) {return !(operator==(other));}
   bool operator<=(AbstractDomain &other);
 
   /// Binary Arithmetic Operations
@@ -72,16 +78,15 @@ public:
 
   /// Functions for icmp predicates
   std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>>
-  subsetsForPredicateEQ(StridedInterval &A, StridedInterval &B);
+  subsetsForPredicateEQ(SimpleInterval &A, SimpleInterval &B);
   std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>>
-  subsetsForPredicateSLE(StridedInterval &A, StridedInterval &B);
+  subsetsForPredicateSLE(SimpleInterval &A, SimpleInterval &B);
   std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>>
-  subsetsForPredicateSLT(StridedInterval &A, StridedInterval &B);
+  subsetsForPredicateSLT(SimpleInterval &A, SimpleInterval &B);
   std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>>
-  subsetsForPredicateULE(StridedInterval &A, StridedInterval &B);
+  subsetsForPredicateULE(SimpleInterval &A, SimpleInterval &B);
   std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>>
-  subsetsForPredicateULT(StridedInterval &A, StridedInterval &B);
-
+  subsetsForPredicateULT(SimpleInterval &A, SimpleInterval &B);
 
   /// icmp
   std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>>
@@ -91,18 +96,16 @@ public:
   bool isWrapAround() const;
 
   // Conduct an overapproximated intersection of two intervals.
-  shared_ptr<AbstractDomain> intersect(const StridedInterval &A, const StridedInterval &B);
-  shared_ptr<AbstractDomain> intersectWithBounds(const StridedInterval &first,
-                                                 const StridedInterval &second);
+  //shared_ptr<AbstractDomain> intersectWithBounds(const SimpleInterval &first,
+  //                                               const SimpleInterval &second);
 
-  shared_ptr<AbstractDomain> leastUpperBound(AbstractDomain &other);
+  virtual shared_ptr<AbstractDomain> leastUpperBound(AbstractDomain& other);
+  virtual shared_ptr<AbstractDomain> intersect(AbstractDomain& other);
+  virtual shared_ptr<AbstractDomain> widen(AbstractDomain& other);
 
-  DomainType getDomainType() const { return stridedInterval; };
+  DomainType getDomainType() const { return simpleInterval; };
 
-  // Widening
-  virtual shared_ptr<AbstractDomain> widen(AbstractDomain &other);
   virtual bool requiresWidening();
-
 
   /// Member functions
   unsigned getBitWidth() const { return bitWidth; }
@@ -110,40 +113,52 @@ public:
   bool isBottom() const { return isBot; }
   bool contains(APInt value) const;
   size_t size() const;
-  APInt realSize() const;
-
-  /// TODO comment
-  std::shared_ptr<AbstractDomain> normalize();
-  bool isNormal();
-  std::set<APInt, Comparator> gamma();
 
   /// Member functions for API
-  APInt getValueAt(uint64_t i) const { return begin + stride*i; }
+  APInt getValueAt(uint64_t i) const { return begin + i; }
   APInt getUMin() const { return umin(); }
   APSInt getSMin() const { return APSInt(smin(),false); }
   APInt getUMax() const { return umax(); }
   APSInt getSMax() const { return APSInt(smax(),false); }
 
   /// Print
-  friend std::ostream &operator<<(std::ostream &os, const StridedInterval &bs);
+  friend std::ostream &operator<<(std::ostream &os, const SimpleInterval &bs);
   virtual llvm::raw_ostream &print(llvm::raw_ostream &os);
   void printOut() const;
 
 private:
+  friend void testSimpleDomain(uint32_t, uint32_t, uint64_t*);
+    
+  SimpleInterval _add (SimpleInterval const& o, bool nuw, bool nsw);
+  SimpleInterval _sub (SimpleInterval const& o, bool nuw, bool nsw);
+  SimpleInterval _mul (SimpleInterval const& o, bool nuw, bool nsw);
+  SimpleInterval _udiv(SimpleInterval const& o);
+  SimpleInterval _urem(SimpleInterval const& o);
+  SimpleInterval _srem(SimpleInterval const& o);
+  SimpleInterval _leastUpperBound(SimpleInterval const& o);
+  SimpleInterval _intersect(SimpleInterval const& o);
+  SimpleInterval _widen(SimpleInterval const& o);
+  static void _icmp(CmpInst::Predicate pred, SimpleInterval a1, SimpleInterval a2, SimpleInterval* r1, SimpleInterval* r2);
+  static SimpleInterval _icmp_ule_val(SimpleInterval a, APInt v);
+  static SimpleInterval _icmp_ult_val(SimpleInterval a, APInt v);
+  static SimpleInterval _icmp_neg(SimpleInterval a);
+  static SimpleInterval _icmp_inv(SimpleInterval a);
+  static SimpleInterval _icmp_shift(SimpleInterval a);
 
-    /// TODO: this vs get methods API
-    APInt umax() const;
-    APInt umin() const;
-    APInt smax() const;
-    APInt smin() const;
-    APInt sstride() const;
-    APInt ustride() const;
+  APInt umax() const;
+  APInt umin() const;
+  APInt smax() const;
+  APInt smaxabsneg() const;
+  APInt smin() const;
 
-    unsigned bitWidth;
-    APInt begin;
-    APInt end;
-    APInt stride;
-    bool isBot;
+  bool innerLe(APInt a, APInt b) const;
+  
+  unsigned bitWidth;
+  APInt begin;
+  APInt end;
+  bool isBot;
+  unsigned debug_id;
+  static unsigned debug_id_gen;
 };
 
 } // namespace pcpo

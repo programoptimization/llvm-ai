@@ -64,7 +64,7 @@ public:
   shared_ptr<AbstractDomain> leastUpperBound(AbstractDomain &other);
 
   /// Member functions
-  bool contains(APInt &value) const;
+  bool contains(APInt value) const;
   unsigned getBitWidth() const;
   std::set<APInt, Comparator> getValues() const;
   bool isTop() const;
