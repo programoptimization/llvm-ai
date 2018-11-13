@@ -12,8 +12,7 @@ using llvm::APInt;
 using std::function;
 using std::shared_ptr;
 
-
-
+    
 class CompositeDomain : public AbstractDomain {
 private:
   unsigned bitWidth;
@@ -94,6 +93,6 @@ public:
   static shared_ptr<AbstractDomain> create_top(unsigned bitWidth) {
     return std::shared_ptr<AbstractDomain>(new CompositeDomain(bitWidth, true));
   }
-};
+} __attribute__((deprecated("CompostieDomain is not supported anymore")));
 } // namespace pcpo
 #endif
