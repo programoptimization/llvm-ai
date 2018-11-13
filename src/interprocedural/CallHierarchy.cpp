@@ -31,7 +31,8 @@ CallHierarchy CallHierarchy::pop(std::size_t frame_count) const {
   std::advance(end, -frame_count);
   CallInstructions newCallInsts(callInsts.begin(), end);
 
-  std::size_t newOffset = 0;
+  std::size_t newOffset = std::max(
+      std::int64_t(0), std::int64_t(offset) - std::int64_t(frame_count));
 
   return CallHierarchy(mainFunction, std::move(newCallInsts), newOffset);
 }
