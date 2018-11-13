@@ -115,8 +115,13 @@ void VsaVisitor::visitBranchInst(BranchInst &I) {
     /// left argument (l)
     if (Instruction::classof(op0)) {
       /// perform comparison
+      /// The abstract domain the true or false branch could possibly have
+      /// A comparison could constraint both operands
       auto temp = ad0->icmp(cmpInst->getPredicate(),
                             cmpInst->getType()->getIntegerBitWidth(), *ad1);
+
+      /// temp.first: True branch of the first operand
+      /// temp.second: False branch of the first operand
 
       putBothBranchConditions(I, op0, temp);
     }
@@ -135,17 +140,20 @@ void VsaVisitor::visitBranchInst(BranchInst &I) {
   visitTerminatorInst(I);
 }
 
-void VsaVisitor::putBothBranchConditions(BranchInst& I, Value* op,
-  std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>> &valuePair) {
-    DEBUG_OUTPUT("T-r: " << *valuePair.first);
-    DEBUG_OUTPUT("F-r: " << *valuePair.second);
+void VsaVisitor::putBothBranchConditions(
+    BranchInst &I, Value *op,
+    std::pair<shared_ptr<AbstractDomain> /*true domain*/,
+              shared_ptr<AbstractDomain> /*false domain*/> &valuePair) {
+  DEBUG_OUTPUT("T-r: " << *valuePair.first);
+  DEBUG_OUTPUT("F-r: " << *valuePair.second);
 
-    /// true
-    bcs.putBranchConditions(I.getParent(), I.getSuccessor(0), op,
-                            valuePair.first);
-    /// false
-    bcs.putBranchConditions(I.getParent(), I.getSuccessor(1), op,
-                            valuePair.second);
+  /// true
+  bcs.putBranchConditions(
+      I.getParent() /*the current basic block in which we are*/,
+      I.getSuccessor(0) /*the target basic block*/, op, valuePair.first);
+  /// false
+  bcs.putBranchConditions(I.getParent(), I.getSuccessor(1), op,
+                          valuePair.second);
 }
 
 void VsaVisitor::visitSwitchInst(SwitchInst &I) {
