@@ -299,7 +299,7 @@ void VsaVisitor::visitCallInst(CallInst &I) {
   auto callerBB = I.getParent();
 
   // put it in the worklist
-  WorkList::Item item(getCurrentCallHierarchy().append(&I), &calleeBB);
+  WorkList::Item item(getCurrentCallHierarchy().push(&I), &calleeBB);
   worklist.push(item);
 
   // propagate the argument values to function parameters
