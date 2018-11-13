@@ -30,6 +30,7 @@ public:
   bool empty();
 
 private:
+  // It is FIFO, so that all successors of the current BB are processed AFTER the called function.
   std::queue<std::unique_ptr<Item>> worklist;
 
   struct ItemHasher {

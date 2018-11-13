@@ -23,19 +23,11 @@ struct VsaPass : public ModulePass {
 
   bool do_print;
 
-  // worklist: instructions are handled in a FIFO manner
   WorkList worklist;
-
-//  struct LocalData {
-//    // map of programPoints
-//    std::map<BasicBlock *, State< programPoints;
-//    VsaResult result;
-//  };
 
   std::map<CallHierarchy, std::map<BasicBlock *, State>> programPoints;
 
 //  VsaResult result;
-
 
 public:
   VsaPass(bool do_print = false)

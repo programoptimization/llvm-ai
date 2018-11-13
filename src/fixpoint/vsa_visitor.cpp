@@ -292,11 +292,33 @@ void VsaVisitor::visitPHINode(PHINode &I) {
 }
 
 void VsaVisitor::visitCallInst(CallInst &I) {
-  // TODO
-  for (llvm::Value* args: I.arg_operands())
-  {
-    llvm::outs() << args << "\n";
+  auto calledFunction = I.getFunction();
+
+  auto& calleeBB = calledFunction->front();
+  auto callerBB = I.getParent();
+
+  // put it in the worklist
+  WorkList::Item item(getCurrentCallHierarchy().append(&I), &calleeBB);
+  worklist.push(item);
+
+  // propagate the argument values to function parameters
+  auto functionArgIt = I.arg_begin();
+  auto functionParamIt = calledFunction->arg_begin();
+
+  for (; functionArgIt != I.arg_end() && functionParamIt != calledFunction->arg_end(); functionArgIt++, functionParamIt++) {
+    auto& functionArg = *functionArgIt;
+    auto functionArgValue = functionArg.get();
+
+    auto& functionParam = *functionParamIt;
+
+    auto oldParamDomain = getProgramPoints()[&calleeBB].getAbstractValue(&functionParam);
+    auto argDomain = getProgramPoints()[callerBB].getAbstractValue(functionArgValue);
+    auto newDomain = oldParamDomain->leastUpperBound(*argDomain);
+
+    getProgramPoints()[&calleeBB].put(functionParam, newDomain);
   }
+
+  assert(functionArgIt == I.arg_end() && functionParamIt == calledFunction->arg_end());
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {

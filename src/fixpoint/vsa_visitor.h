@@ -102,7 +102,7 @@ public:
   std::map<BasicBlock *, State> const& getProgramPoints() const;
 
   void setCurrentCallHierarchy(CallHierarchy callHierarchy) {
-    this->currentCallHierarchy = callHierarchy;
+    this->currentCallHierarchy = std::move(callHierarchy);
   }
 
 private:
@@ -128,8 +128,6 @@ private:
   }
 
   State newState;
-
-  // TODO move this state out of the visitor
   WorkList &worklist;
   pcpo::CallHierarchy currentCallHierarchy;
   std::map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
