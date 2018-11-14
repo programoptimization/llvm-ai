@@ -27,8 +27,7 @@ template <typename... T> std::size_t HashArguments(T &&... args) {
 template <typename Iterator>
 std::size_t HashRange(Iterator begin, Iterator end) {
   std::size_t seed = 0;
-  auto itr = begin;
-  for (; begin != end; ++itr) {
+  for (auto itr = begin; itr != end; ++itr) {
     HashCombine(seed, *itr);
   }
   return seed;
