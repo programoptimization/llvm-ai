@@ -63,6 +63,12 @@ opt -mem2reg < hello.bc > hello-opt.bc
 opt -load llvm/lib/llvm-vsa.so -vsapass < hello.bc > /dev/null
 ```
 
+## IDE Development
+### CLion
+
+
+### XCode
+
 ## Useful classes and methods in LLVM
 
 * Write output: errs() << "Hello World!\n"
