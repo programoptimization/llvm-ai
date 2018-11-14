@@ -23,7 +23,7 @@ public:
       : mainFunction(mainFunction), callInsts(std::move(callInsts)),
         offset(offset) {
     /// Assert against bad offsets
-    assert(offset <= callInsts.size());
+    assert(offset <= this->callInsts.size());
   }
 
   /// Returns true when we are currently iside the main function
