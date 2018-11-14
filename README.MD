@@ -65,23 +65,28 @@ opt -load llvm/lib/llvm-vsa.so -vsapass < hello.bc > /dev/null
 
 ## IDE Development
 ### CLion
+#### Setup
+* move build folder under llvm/cmake-build-debug
+* run ValueSetAnalysis/samples/run.sh once
+* edit your run configuration
+#### Run configuration
 
 <table>
   <tr>
     <td>Target:</td>
-    <td>*llvm-vsa*</td>
+    <td><i>llvm-vsa</i></td>
   </tr>
   <tr>
     <td>Executable:</td>
-    <td>*opt*</td>
+    <td><i>opt</i></td>
   </tr>
   <tr>
     <td>Program arguments:</td>
-    <td>*-load path-to-llvm/cmake-build-debug/lib/llvm-vsa.so -vsapass build/while-1.c-opt.bc*</td>
+    <td><i>-load <b>path-to-llvm</b>/cmake-build-debug/lib/llvm-vsa.so -vsapass build/while-1.c-opt.bc</i></td>
   </tr>
   <tr>
     <td>Working directory:</td>
-    <td>*path-to-ValueSetAnalysis/samples*</td>
+    <td><i><b>path-to-ValueSetAnalysis</b>/samples</i></td>
   </tr>
 </table>
 
@@ -96,8 +101,7 @@ To be able to use the debugger make sure to set the executable to opt. In the la
 
 **Missing Header Files**
 
-If your are missing some header files in your Xcode project make sure to include them in: 
-```./llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/CMakeLists.txt```
+If your are missing some header files in your Xcode project make sure to include them in: ./llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/CMakeLists.txt
 
 ## Useful classes and methods in LLVM
 
