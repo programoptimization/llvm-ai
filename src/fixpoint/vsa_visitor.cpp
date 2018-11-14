@@ -316,6 +316,8 @@ void VsaVisitor::visitCallInst(CallInst &I) {
   auto functionArgIt = I.arg_begin();
   auto functionParamIt = calledFunction->arg_begin();
 
+  bool paramDomainChanged = false;
+  
   for (; functionArgIt != I.arg_end() && functionParamIt != calledFunction->arg_end();
          functionArgIt++, functionParamIt++) {
     auto &functionArg = *functionArgIt;
@@ -328,14 +330,21 @@ void VsaVisitor::visitCallInst(CallInst &I) {
     auto argDomain = getProgramPoints()[callerBB].getAbstractValue(functionArgValue);
     auto newDomain = oldParamDomain->leastUpperBound(*argDomain);
 
+    if (newDomain <= oldParamDomain && oldParamDomain <= newDomain) {
+      // TODO: check if this SHOULD MEAN that old and new domain are the same
+      continue;     
+    }
+    
     getProgramPoints()[&calleeBB].put(functionParam, newDomain);
+    paramDomainChanged = true;
   }
 
-  // todo: check if we actually need to push new work-list item
-
-  worklist.push({calleeHierarchy, &calleeBB});
-
   assert(functionArgIt == I.arg_end() && functionParamIt == calledFunction->arg_end());
+
+  if (paramDomainChanged) {
+    worklist.push({calleeHierarchy, &calleeBB});
+  }
+
 }
 
 void VsaVisitor::visitReturnInst(ReturnInst &I) {
