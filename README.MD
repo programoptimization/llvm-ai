@@ -65,7 +65,30 @@ opt -load llvm/lib/llvm-vsa.so -vsapass < hello.bc > /dev/null
 
 ## IDE Development
 ### CLion
+#### Setup
+* move build folder under llvm/cmake-build-debug
+* run ValueSetAnalysis/samples/run.sh once
+* edit your run configuration
+#### Run configuration
 
+<table>
+  <tr>
+    <td>Target:</td>
+    <td>llvm-vsa</td>
+  </tr>
+  <tr>
+    <td>Executable:</td>
+    <td>opt</td>
+  </tr>
+  <tr>
+    <td>Program arguments:</td>
+    <td>-load path-to-llvm/cmake-build-debug/lib/llvm-vsa.so -vsapass build/while-1.c-opt.bc</td>
+  </tr>
+  <tr>
+    <td>Working directory:</td>
+    <td>path-to-ValueSetAnalysis/samples</td>
+  </tr>
+</table>
 
 ### XCode
 
