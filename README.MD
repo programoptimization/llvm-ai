@@ -62,6 +62,22 @@ clang -O0 -emit-llvm hello.c -Xclang -disable-O0-optnone -c -o hello.bc
 opt -mem2reg < hello.bc > hello-opt.bc
 opt -load llvm/lib/llvm-vsa.so -vsapass < hello.bc > /dev/null
 ```
+### ... debug flags
+
+<table>
+  <tr>
+    <td>src/util/util.h::<b>DEBUG</b></td>
+    <td><i>debug output from everywhere; very verbose</i></td>
+  </tr>
+  <tr>
+    <td>src/util/util.h::<b>VISUAL_DEBUG</b></td>
+    <td><i>opens a control flow graph and logs information in every step of the fixpoint algorithm</i></td>
+  </tr>
+  <tr>
+    <td>src/vsa.h::VsaPass( <b>do_print</b> )</td>
+    <td>prints trace of the function the algorithm ran on</td>
+  </tr>
+</table>
 
 ## IDE Development
 ### CLion
