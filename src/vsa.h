@@ -61,9 +61,7 @@ public:
     programPoints.clear();
 
     CallHierarchy initCallHierarchy{current_function};
-    VsaVisitor vis(worklist,
-                   initCallHierarchy,
-                   programPoints);
+    VsaVisitor vis(worklist, initCallHierarchy, programPoints);
 
     /// get the first basic block and push it into the worklist
     worklist.push(WorkList::Item(initCallHierarchy, &current_function->front()));
