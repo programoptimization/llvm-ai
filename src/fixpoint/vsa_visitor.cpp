@@ -339,6 +339,31 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
     return;
   }
 
+  if (CallHierarchy::callStringDepth() == 0) {
+    auto currentFunction = I.getFunction();
+    auto functionUses = currentFunction->uses();
+
+    for (auto &use : functionUses) {
+      CallSite callSite(use.getUser());
+      Instruction *call = callSite.getInstruction();
+
+      if (!call || !callSite.isCallee(&use) || call->use_empty()) {
+        continue;
+      }
+
+      auto callerBB = call->getParent();
+
+      // Prevents us from visiting not marked basic blocks.
+      if (getProgramPoints()[callerBB].isBottom()) {
+        continue;
+      }
+
+      worklist.push({currentCallHierarchy, callerBB});
+    }
+
+    return;
+  }
+
   auto lastCallBB = lastCallInstruction->getParent();
   // shift the call hierarchy window to the left
   auto lastCallHierarchy = getCurrentCallHierarchy().pop(1);

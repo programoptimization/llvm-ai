@@ -47,6 +47,8 @@ public:
 
   bool operator==(CallHierarchy const &other) const;
 
+  static size_t callStringDepth();
+
 private:
   CallInstructions::const_iterator callInstructionsBegin() const;
   CallInstructions::const_iterator callInstructionsEnd() const;

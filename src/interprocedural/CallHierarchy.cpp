@@ -5,8 +5,6 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 
-static std::size_t const callStringDepth = 1;
-
 namespace pcpo {
 bool CallHierarchy::isInMainFunction() const { return callInsts.empty(); }
 
@@ -19,7 +17,7 @@ CallHierarchy CallHierarchy::push(llvm::CallInst *callInst) const {
   newCallInsts.push_back(callInst);
 
   auto newOffset = std::max(std::int64_t(0), std::int64_t(newCallInsts.size()) -
-                                                 std::int64_t(callStringDepth));
+                                                 std::int64_t(callStringDepth()));
 
   return CallHierarchy(mainFunction, std::move(newCallInsts), newOffset);
 }
@@ -87,6 +85,11 @@ llvm::CallInst *CallHierarchy::getLastCallInstruction() const {
 
   return callInsts.back();
 }
+
+size_t CallHierarchy::callStringDepth() {
+  return 1;
+}
+
 } // namespace pcpo
 
 size_t std::hash<pcpo::CallHierarchy>::
