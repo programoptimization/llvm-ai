@@ -144,7 +144,7 @@ private:
     APInt end;
     APInt stride;
     bool isBot;
-} __attribute__((deprecated("StridedInterval is most likely broken and not supported anymore", "SimpleInterval")));
+} __attribute__((deprecated("StridedInterval is most likely broken and not supported anymore")));
 
 } // namespace pcpo
 #endif

@@ -15,7 +15,7 @@ const int OUTPUT_BASE = 10;
 const int OUTPUT_SIGNED = false;
 
 enum DomainType {
-    stridedInterval __attribute__((deprecated("StridedInterval is most likely broken and not supported anymore", "simpleInterval"))),
+    stridedInterval __attribute__((deprecated("StridedInterval is most likely broken and not supported anymore"))),
     boundedSet,
     compositeDomain __attribute__((deprecated("CompositeDomain is not supported anymore"))),
     simpleInterval
