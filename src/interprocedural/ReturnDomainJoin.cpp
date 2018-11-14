@@ -38,9 +38,8 @@ public:
 };
 } // namespace
 
-std::shared_ptr<AbstractDomain>
-joinReturnDomain(std::map<BasicBlock *, State> &program_points,
-                 std::shared_ptr<AbstractDomain> return_domain) {
+void joinReturnDomain(std::map<BasicBlock *, State> &program_points,
+                      std::shared_ptr<AbstractDomain> return_domain) {
   for (auto &&entry : program_points) {
     BasicBlock *block = entry.first;
 
