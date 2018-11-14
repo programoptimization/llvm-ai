@@ -65,11 +65,13 @@ opt -load llvm/lib/llvm-vsa.so -vsapass < hello.bc > /dev/null
 
 ## IDE Development
 ### CLion
-#### Setup
-* move build folder under llvm/cmake-build-debug
+**Setup**
+
+* move build folder to llvm/cmake-build-debug
 * run ValueSetAnalysis/samples/run.sh once
 * edit your run configuration
-#### Run configuration
+
+**Run configuration**
 
 <table>
   <tr>
