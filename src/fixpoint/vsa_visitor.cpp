@@ -336,6 +336,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
 
   // When the return is in a main, there is no last call.
   if (lastCallInstruction == nullptr) {
+    visitTerminatorInst(I);
     return;
   }
 
@@ -361,6 +362,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
       worklist.push({currentCallHierarchy, callerBB});
     }
 
+    visitTerminatorInst(I);
     return;
   }
 
@@ -376,6 +378,8 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   lastCallProgramPoints.put(*lastCallInstruction, newCallInstDomain);
 
   worklist.push(WorkList::Item(lastCallHierarchy, lastCallBB));
+
+  visitTerminatorInst(I);
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {
