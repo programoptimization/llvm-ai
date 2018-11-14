@@ -293,13 +293,16 @@ void VsaVisitor::visitPHINode(PHINode &I) {
 }
 
 void VsaVisitor::visitCallInst(CallInst &I) {
-  auto calledFunction = I.getFunction();
+  auto calledFunction = I.getCalledFunction();
 
   auto& calleeBB = calledFunction->front();
   auto callerBB = I.getParent();
 
+  auto callerHierarchy = getCurrentCallHierarchy();
+  auto calleeHierarchy = callerHierarchy.push(&I);
+
   // put it in the worklist
-  WorkList::Item item(getCurrentCallHierarchy().push(&I), &calleeBB);
+  WorkList::Item item(calleeHierarchy, &calleeBB);
   worklist.push(item);
 
   // propagate the argument values to function parameters
