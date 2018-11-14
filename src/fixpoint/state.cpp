@@ -38,6 +38,7 @@ bool State::put(Value &v, std::shared_ptr<AbstractDomain> ad) {
   return true;
 }
 
+// Todo: create a method that will return BOTTOM instead of TOP if not found.
 shared_ptr<AbstractDomain> State::getAbstractValue(Value *v) const {
 
   if (ConstantInt::classof(v)) {
