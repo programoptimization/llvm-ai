@@ -52,17 +52,16 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
   if (numPreds > 1) {
     newState.prune(
         getProgramPoints()
-            [getCurrentDominatorTree().getNode(&BB)->getIDom()->getBlock()]);
+        [getCurrentDominatorTree().getNode(&BB)->getIDom()->getBlock()]);
   }
 
   /// visited and still bottom: something is wrong...
   /// none of the preceeding basic blocks has been visited!?
   assert(!newState.isBottom() &&
-         "VsaVisitor::visitBasicBlock: newState is still bottom!");
+      "VsaVisitor::visitBasicBlock: newState is still bottom!");
 }
 
-void VsaVisitor::visitTerminatorInst(TerminatorInst &I) {
-  DEBUG_OUTPUT("visitTerminationInst: entered");
+void VsaVisitor::upsertNewState(TerminatorInst &I) {
   const auto currentBB = I.getParent();
   const auto oldState = getProgramPoints().find(currentBB);
   if (oldState != getProgramPoints().end()) {
@@ -81,18 +80,30 @@ void VsaVisitor::visitTerminatorInst(TerminatorInst &I) {
       /// new state was old state: do not push successors
       DEBUG_OUTPUT("visitTerminationInst: state has not been changed");
       DEBUG_OUTPUT("visitTerminationInst: new state equals old state in "
-                   << currentBB->getName());
+                       << currentBB->getName());
       return;
     } /// else: state has changed
   } else {
     DEBUG_OUTPUT("visitTerminationInst: old state not found");
     getProgramPoints()[currentBB] = newState;
   }
+}
+
+/// This method updates the state in global program and then
+/// pushes successor blocks in the worklist.
+/// Some specialised visits for TerminatorInst like ReturnInst
+/// rely on this logic to work properly.
+/// If any additional logic is added to this function,
+/// consider also updating those specialised versions.
+void VsaVisitor::visitTerminatorInst(TerminatorInst &I) {
+  DEBUG_OUTPUT("visitTerminationInst: entered");
+
+  upsertNewState(I);
 
   DEBUG_OUTPUT(
       "visitTerminationInst: state has been changed -> push successors");
   DEBUG_OUTPUT("visitTerminationInst: new state in bb "
-               << currentBB->getName());
+                   << I.getParent()->getName());
 
   /// push currently reachable successors
   pushSuccessors(I);
@@ -295,25 +306,22 @@ void VsaVisitor::visitPHINode(PHINode &I) {
 void VsaVisitor::visitCallInst(CallInst &I) {
   auto calledFunction = I.getCalledFunction();
 
-  auto& calleeBB = calledFunction->front();
+  auto &calleeBB = calledFunction->front();
   auto callerBB = I.getParent();
 
-  auto callerHierarchy = getCurrentCallHierarchy();
-  auto calleeHierarchy = callerHierarchy.push(&I);
-
-  // put it in the worklist
-  WorkList::Item item(calleeHierarchy, &calleeBB);
-  worklist.push(item);
+  auto currentCallHierarchy = getCurrentCallHierarchy();
+  auto calleeHierarchy = currentCallHierarchy.push(&I);
 
   // propagate the argument values to function parameters
   auto functionArgIt = I.arg_begin();
   auto functionParamIt = calledFunction->arg_begin();
 
-  for (; functionArgIt != I.arg_end() && functionParamIt != calledFunction->arg_end(); functionArgIt++, functionParamIt++) {
-    auto& functionArg = *functionArgIt;
+  for (; functionArgIt != I.arg_end() && functionParamIt != calledFunction->arg_end();
+         functionArgIt++, functionParamIt++) {
+    auto &functionArg = *functionArgIt;
     auto functionArgValue = functionArg.get();
 
-    auto& functionParam = *functionParamIt;
+    auto &functionParam = *functionParamIt;
 
     // If there is no old domain, we get top.
     auto oldParamDomain = getProgramPoints()[&calleeBB].getAbstractValue(&functionParam);
@@ -323,63 +331,77 @@ void VsaVisitor::visitCallInst(CallInst &I) {
     getProgramPoints()[&calleeBB].put(functionParam, newDomain);
   }
 
+  // todo: check if we actually need to push new work-list item
+
+  worklist.push({calleeHierarchy, &calleeBB});
+
   assert(functionArgIt == I.arg_end() && functionParamIt == calledFunction->arg_end());
 }
 
 void VsaVisitor::visitReturnInst(ReturnInst &I) {
-  auto currentBB = I.getParent();
-  auto returnValue = I.getReturnValue();
-  auto& currentCallHierarchy = getCurrentCallHierarchy();
-  auto& currentProgramPoints = getProgramPoints()[currentBB];
 
+  // updates global program points with the new state
+  upsertNewState(I);
+
+  auto &currentCallHierarchy = getCurrentCallHierarchy();
   auto lastCallInstruction = currentCallHierarchy.getLastCallInstruction();
+
 
   // When the return is in a main, there is no last call.
   if (lastCallInstruction == nullptr) {
-    visitTerminatorInst(I);
+    pushSuccessors(I);
     return;
   }
 
-  if (CallHierarchy::callStringDepth() == 0) {
-    auto currentFunction = I.getFunction();
-    auto functionUses = currentFunction->uses();
 
-    for (auto &use : functionUses) {
-      CallSite callSite(use.getUser());
-      Instruction *call = callSite.getInstruction();
+  if (CallHierarchy::callStringDepth() != 0) {
+    // shift the call hierarchy window to the left
+    auto lastCallHierarchy = getCurrentCallHierarchy().pop(1);
+    mergeAbstractDomains(*lastCallInstruction, lastCallHierarchy, I);
+    worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
 
-      if (!call || !callSite.isCallee(&use) || call->use_empty()) {
-        continue;
-      }
+    pushSuccessors(I);
+    return;
+  }
 
-      auto callerBB = call->getParent();
+  auto currentFunction = I.getFunction();
+  auto functionUses = currentFunction->uses();
 
-      // Prevents us from visiting not marked basic blocks.
-      if (getProgramPoints()[callerBB].isBottom()) {
-        continue;
-      }
+  for (auto &use : functionUses) {
+    CallSite callSite(use.getUser());
+    Instruction *call = callSite.getInstruction();
 
-      worklist.push({currentCallHierarchy, callerBB});
+    if (!call || !callSite.isCallee(&use) || call->use_empty()) {
+      continue;
     }
 
-    visitTerminatorInst(I);
-    return;
+    auto callerBB = call->getParent();
+
+    // Prevents us from visiting not marked basic blocks.
+    if (getProgramPoints()[callerBB].isBottom()) {
+      continue;
+    }
+
+    auto callInst = llvm::cast<CallInst>(call);
+    mergeAbstractDomains(*callInst, currentCallHierarchy, I);
+
+    worklist.push({currentCallHierarchy, callerBB});
   }
 
-  auto lastCallBB = lastCallInstruction->getParent();
-  // shift the call hierarchy window to the left
-  auto lastCallHierarchy = getCurrentCallHierarchy().pop(1);
-  auto& lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallBB];
+  pushSuccessors(I);
 
-  auto returnDomain = currentProgramPoints.getAbstractValue(returnValue);
-  auto oldCallInstDomain = lastCallProgramPoints.getAbstractValue(lastCallInstruction);
+}
+
+void VsaVisitor::mergeAbstractDomains(CallInst &lastCallInst,
+                                      const CallHierarchy &lastCallHierarchy,
+                                      ReturnInst &returnInst) {
+  auto &lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallInst.getParent()];
+
+  auto returnDomain = getProgramPoints()[returnInst.getParent()].getAbstractValue(returnInst.getReturnValue());
+  auto oldCallInstDomain = lastCallProgramPoints.getAbstractValue(&lastCallInst);
   auto newCallInstDomain = oldCallInstDomain->leastUpperBound(*returnDomain);
 
-  lastCallProgramPoints.put(*lastCallInstruction, newCallInstDomain);
-
-  worklist.push(WorkList::Item(lastCallHierarchy, lastCallBB));
-
-  visitTerminatorInst(I);
+  lastCallProgramPoints.put(lastCallInst, newCallInstDomain);
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {
@@ -509,15 +531,15 @@ void VsaVisitor::print() const {
 }
 
 std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints() {
-  return programPoints[currentCallHierarchy];
+  return programPoints[currentCallHierarchy_];
 }
 
-std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints(const CallHierarchy& callHierarchy) {
+std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints(const CallHierarchy &callHierarchy) {
   return programPoints[callHierarchy];
 }
 
 std::map<BasicBlock *, State> const &VsaVisitor::getProgramPoints() const {
-  return programPoints[currentCallHierarchy];
+  return programPoints[currentCallHierarchy_];
 }
 
 DominatorTree const &VsaVisitor::getCurrentDominatorTree() {

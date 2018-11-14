@@ -24,7 +24,7 @@ class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 
 public:
   VsaVisitor(WorkList &q, CallHierarchy callHierarchy, std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>>& programPoints)
-      : worklist(q), currentCallHierarchy(std::move(callHierarchy)), programPoints(programPoints)/*, bcs(programPoints)*/{};
+      : worklist(q), currentCallHierarchy_(std::move(callHierarchy)), programPoints(programPoints)/*, bcs(programPoints)*/{};
 
   /// create lub of states of preceeding basic blocks and use it as newState;
   /// the visitor automatically visits all instructions of this basic block
@@ -96,6 +96,10 @@ public:
   /// default
   void visitInstruction(Instruction &I);
 
+  void upsertNewState(TerminatorInst &I);
+  void mergeAbstractDomains(CallInst& lastCallInst, const CallHierarchy& lastCallHierarchy, ReturnInst &returnInst);
+
+
   /// print state of all basic blocks
   void print() const;
 
@@ -105,7 +109,7 @@ public:
   std::map<BasicBlock *, State> &getProgramPoints(const CallHierarchy& callHierarchy);
 
   void setCurrentCallHierarchy(CallHierarchy callHierarchy) {
-    this->currentCallHierarchy = std::move(callHierarchy);
+    this->currentCallHierarchy_ = std::move(callHierarchy);
   }
 
 private:
@@ -117,7 +121,7 @@ private:
 
   /// Returns the current call hierarchy
   pcpo::CallHierarchy const &getCurrentCallHierarchy() {
-    return currentCallHierarchy;
+    return currentCallHierarchy_;
   }
 
   std::unordered_map<llvm::Function *, DominatorTree> dominatorTreeCache;
@@ -132,7 +136,7 @@ private:
 
   State newState;
   WorkList &worklist;
-  pcpo::CallHierarchy currentCallHierarchy;
+  pcpo::CallHierarchy currentCallHierarchy_;
   std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
 //  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
 };
