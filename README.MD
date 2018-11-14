@@ -108,7 +108,7 @@ opt -load llvm/lib/llvm-vsa.so -vsapass < hello.bc > /dev/null
   </tr>
 </table>
 
-:information_source: Make sure to use the _*-opt.bc_ file as argument, not the standard bitcode file!
+:information_source: Make sure to use the _*.opt.bc_ file as argument, not the standard bitcode file!
 
 ### XCode
 
