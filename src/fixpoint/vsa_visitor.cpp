@@ -337,7 +337,8 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   }
 
   auto lastCallBB = lastCallInstruction->getParent();
-  auto lastCallHierarchy = getCurrentCallHierarchy(); // todo: shift the window to the left
+  // shift the call hierarchy window to the left
+  auto lastCallHierarchy = getCurrentCallHierarchy().pop(1);
   auto& lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallBB];
 
   auto returnDomain = currentProgramPoints.getAbstractValue(returnValue);
