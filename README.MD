@@ -79,7 +79,7 @@ To be able to use the debugger make sure to set the executable to opt. In the la
 **Missing Header Files**
 
 If your are missing some header files in your Xcode project make sure to include them in: 
-```./llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/CMakeLists.txt
+```./llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/CMakeLists.txt```
 
 ## Useful classes and methods in LLVM
 
