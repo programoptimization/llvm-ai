@@ -97,6 +97,8 @@ To be able to use the debugger make sure to set the executable to opt. In the la
 ![screen shot 2018-11-14 at 09 56 20](https://user-images.githubusercontent.com/7985149/48471173-8fc63180-e7f3-11e8-88c2-61d72118e621.png)
 ![screen shot 2018-11-14 at 09 56 15](https://user-images.githubusercontent.com/7985149/48471172-8fc63180-e7f3-11e8-8f69-7754e3769b5e.png)
 
+If your are missing some header files in your Xcode project make sure to include them in: ./llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/CMakeLists.txt
+
 ## Useful classes and methods in LLVM
 
 * Write output: errs() << "Hello World!\n"
