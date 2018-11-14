@@ -27,8 +27,7 @@ public:
       llvm_unreachable("The ReturnInst is required to have a present domain!");
     }
 
-    std::shared_ptr<AbstractDomain> current =
-        state->second.getAbstractValue(&I);
+    auto current = state->second.getAbstractValue(I.getReturnValue());
 
     if (return_domain_) {
       return_domain_->leastUpperBound(*current);
