@@ -304,6 +304,18 @@ void VsaVisitor::visitPHINode(PHINode &I) {
 }
 
 void VsaVisitor::visitCallInst(CallInst &I) {
+
+  auto &currentProgramPoints = getProgramPoints();
+  auto callResult = currentProgramPoints.find(I.getParent());
+  const bool visitedCalleeAlready = (callResult != currentProgramPoints.end());
+
+  //TODO REMOVE DEBUG OUTPUT
+  if (visitedCalleeAlready) {
+    llvm::errs() << I << " " << *(callResult->second.getAbstractValue(&I)) << "\n";
+  } else {
+    llvm::errs() << I << " domain is bottom" << "\n";
+  }
+
   auto calledFunction = I.getCalledFunction();
 
   auto &calleeBB = calledFunction->front();
@@ -341,7 +353,7 @@ void VsaVisitor::visitCallInst(CallInst &I) {
 
   assert(functionArgIt == I.arg_end() && functionParamIt == calledFunction->arg_end());
 
-  if (paramDomainChanged) {
+  if (paramDomainChanged || !visitedCalleeAlready) {
     worklist.push({calleeHierarchy, &calleeBB});
   }
 
@@ -406,7 +418,8 @@ void VsaVisitor::mergeAbstractDomains(CallInst &lastCallInst,
                                       ReturnInst &returnInst) {
   auto &lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallInst.getParent()];
 
-  auto returnDomain = getProgramPoints()[returnInst.getParent()].getAbstractValue(returnInst.getReturnValue());
+  auto returnValue = returnInst.getReturnValue();
+  auto returnDomain = getProgramPoints()[returnInst.getParent()].getAbstractValue(returnValue);
   auto oldCallInstDomain = lastCallProgramPoints.getAbstractValue(&lastCallInst);
   auto newCallInstDomain = oldCallInstDomain->leastUpperBound(*returnDomain);
 
