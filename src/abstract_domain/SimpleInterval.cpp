@@ -587,15 +587,17 @@ SimpleInterval SimpleInterval::_widen(SimpleInterval const& o) {
   if (isBot) return o;
   if (o.isBot) return *this;
 
-  APInt incr = end - begin;;
-  if (incr.uge(APInt::getSignedMaxValue(bitWidth))) {
-    // Too large already, return true
-    return SimpleInterval(true, bitWidth);
-  } 
+  APInt incr = end - begin;
 
   // Widen the sides that changed
   SimpleInterval r = _leastUpperBound(o);
-  int flags = (r.begin != begin) | (r.end != end) << 1;
+
+  if ((r.end - r.begin).uge(APInt::getSignedMaxValue(bitWidth))) {
+        // Too large already, return true
+        return SimpleInterval(true, bitWidth);
+    }
+
+    int flags = (r.begin != begin) | (r.end != end) << 1;
   incr.ashrInPlace(flags == 3 ? 1 : 0);
   incr += incr.isNullValue(); // Always widen by at least 1
   if (flags & 1) r.begin -= incr;
