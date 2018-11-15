@@ -1,0 +1,1031 @@
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/add-1.c
+
+Global state after 2 visits
+VsaVisitor::print():entry
+inc -> [2, 2]_i32
+inc1 -> [3, 3]_i32
+add -> T_i32
+VsaVisitor::print():if.then
+inc -> [2, 2]_i32
+inc1 -> [3, 3]_i32
+add -> [2, 2]_i32
+add2 -> [3, 3]_i32
+VsaVisitor::print():if.end
+inc -> T_i32
+inc1 -> [3, 3]_i32
+add -> T_i32
+add3 -> T_i32
+a.0 -> T_i32
+
+
+
+
+
+TRACE OF FUNCTION test:
+entry#1: 0 
+if.end#1: 2 
+if.then#1: 1 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/add-2.c
+
+Global state after 1 visits
+VsaVisitor::print():entry
+inc -> [2, 2]_i32
+inc1 -> [3, 3]_i32
+inc2 -> [4, 4]_i32
+VsaVisitor::print():if.end
+inc -> [2, 4]_i32
+inc1 -> [3, 3]_i32
+inc2 -> [2, 4]_i32
+add3 -> [5, 7]_i32
+a.0 -> [2, 4]_i32
+
+
+
+
+
+TRACE OF FUNCTION test:
+entry#1: 0 
+if.end#1: 1 
+if.then#0: 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/add-3.c
+
+Global state after 2 visits
+VsaVisitor::print():entry
+inc -> [2, 2]_i32
+inc1 -> [3, 3]_i32
+inc2 -> [4, 4]_i32
+VsaVisitor::print():if.then
+inc -> [2, 4]_i32
+inc1 -> [3, 3]_i32
+inc2 -> [2, 4]_i32
+add -> [3, 5]_i32
+VsaVisitor::print():if.end
+inc -> [2, 4]_i32
+inc1 -> [3, 3]_i32
+inc2 -> [2, 4]_i32
+add3 -> [6, 8]_i32
+a.0 -> [3, 5]_i32
+
+
+
+
+
+TRACE OF FUNCTION test:
+entry#1: 0 
+if.end#1: 2 
+if.then#1: 1 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/add-4.c
+
+Global state after 0 visits
+VsaVisitor::print():entry
+inc -> [2, 2]_i32
+inc1 -> [3, 3]_i32
+inc2 -> [4, 4]_i32
+
+
+
+
+
+TRACE OF FUNCTION test:
+entry#1: 0 
+if.end#0: 
+if.then#0: 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/cmp-two-variables-1.c
+
+Global state after 9 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():if.then
+argc -> T_i32
+VsaVisitor::print():if.else
+argc -> T_i32
+VsaVisitor::print():if.end
+argc -> T_i32
+x.0 -> [1, 3]_i32
+VsaVisitor::print():if.then2
+argc -> T_i32
+x.0 -> [1, 3]_i32
+VsaVisitor::print():if.else3
+argc -> T_i32
+x.0 -> [1, 3]_i32
+VsaVisitor::print():if.end4
+argc -> T_i32
+x.0 -> [1, 3]_i32
+y.0 -> [2, 4]_i32
+VsaVisitor::print():if.then6
+argc -> T_i32
+x.0 -> [1, 3]_i32
+y.0 -> [2, 3]_i32
+VsaVisitor::print():if.else7
+argc -> T_i32
+x.0 -> [3, 3]_i32
+y.0 -> [2, 4]_i32
+VsaVisitor::print():if.end9
+argc -> T_i32
+x.0 -> [1, 3]_i32
+y.0 -> [2, 4]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+if.else#1: 2 
+if.else3#1: 5 
+if.else7#1: 8 
+if.end#1: 3 
+if.end4#1: 6 
+if.end9#1: 9 
+if.then#1: 1 
+if.then2#1: 4 
+if.then6#1: 7 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/cmp-two-variables-2.c
+
+Global state after 11 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():if.then
+argc -> T_i32
+VsaVisitor::print():if.else
+argc -> T_i32
+VsaVisitor::print():if.end
+argc -> T_i32
+x.0 -> [1, 3]_i32
+VsaVisitor::print():if.then2
+argc -> T_i32
+x.0 -> [1, 3]_i32
+VsaVisitor::print():if.else3
+argc -> T_i32
+x.0 -> [1, 3]_i32
+VsaVisitor::print():if.end4
+argc -> T_i32
+x.0 -> [1, 3]_i32
+y.0 -> [0, 4]_i32
+VsaVisitor::print():if.then6
+argc -> T_i32
+x.0 -> [1, 3]_i32
+y.0 -> [0, 3]_i32
+VsaVisitor::print():if.then8
+argc -> T_i32
+x.0 -> [1, 3]_i32
+y.0 -> [0, 0]_i32
+VsaVisitor::print():if.end9
+argc -> T_i32
+x.0 -> [1, 3]_i32
+y.0 -> [0, 3]_i32
+VsaVisitor::print():if.end10
+argc -> T_i32
+x.0 -> [1, 3]_i32
+y.0 -> [0, 4]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+if.else#1: 2 
+if.else3#1: 5 
+if.end#1: 3 
+if.end10#2: 8 11 
+if.end4#1: 6 
+if.end9#1: 10 
+if.then#1: 1 
+if.then2#1: 4 
+if.then6#1: 7 
+if.then8#1: 9 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/euler-48.c
+
+Global state after 191 visits
+VsaVisitor::print():entry
+VsaVisitor::print():for.cond
+i.0 -> T_i32
+rem.0 -> [0, 10000000000]_i64
+VsaVisitor::print():for.body
+i.0 -> [4294965738, 1559]_i32
+rem.0 -> [0, 10000000000]_i64
+VsaVisitor::print():for.cond1
+i.0 -> T_i32
+rem.0 -> [0, 10000000000]_i64
+r.0 -> [0, 10000000000]_i64
+j.0 -> [0, 82]_i32
+VsaVisitor::print():for.body3
+rem4 -> [0, 10000000000]_i64
+mul -> T_i64
+i.0 -> T_i32
+rem.0 -> [0, 10000000000]_i64
+r.0 -> [0, 10000000000]_i64
+j.0 -> [0, 27]_i32
+VsaVisitor::print():for.inc
+inc -> [1, 48]_i32
+rem4 -> [0, 10000000000]_i64
+mul -> T_i64
+i.0 -> T_i32
+rem.0 -> [0, 10000000000]_i64
+r.0 -> [0, 10000000000]_i64
+j.0 -> [0, 47]_i32
+VsaVisitor::print():for.end
+rem5 -> [0, 10000000000]_i64
+add -> [0, 20000000000]_i64
+i.0 -> T_i32
+rem.0 -> [0, 10000000000]_i64
+r.0 -> [0, 10000000000]_i64
+j.0 -> [15, 48]_i32
+VsaVisitor::print():for.inc6
+rem5 -> [0, 10000000000]_i64
+add -> [0, 20000000000]_i64
+i.0 -> T_i32
+rem.0 -> [0, 10000000000]_i64
+r.0 -> [0, 10000000000]_i64
+j.0 -> [15, 48]_i32
+inc7 -> T_i32
+VsaVisitor::print():for.end8
+i.0 -> T_i32
+rem.0 -> [0, 10000000000]_i64
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+for.body#22: 2 27 37 45 55 62 69 76 83 91 99 107 115 123 131 139 147 155 163 171 179 187 
+for.body3#28: 4 7 10 13 16 19 25 31 39 47 53 60 67 74 81 89 97 105 113 121 129 137 145 153 161 169 177 185 
+for.cond#23: 1 24 30 36 44 52 59 66 73 80 88 96 104 112 120 128 136 144 152 160 168 176 184 
+for.cond1#31: 3 6 9 12 15 18 23 29 35 38 43 46 51 58 65 72 79 87 95 103 111 119 127 135 143 151 159 167 175 183 191 
+for.end#23: 20 26 32 40 48 54 61 68 75 82 90 98 106 114 122 130 138 146 154 162 170 178 186 
+for.end8#14: 84 92 100 108 116 124 132 140 148 156 164 172 180 188 
+for.inc#27: 5 8 11 14 17 21 33 41 49 56 63 70 77 85 93 101 109 117 125 133 141 149 157 165 173 181 189 
+for.inc6#23: 22 28 34 42 50 57 64 71 78 86 94 102 110 118 126 134 142 150 158 166 174 182 190 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/euler.c
+
+Global state after 333 visits
+VsaVisitor::print():entry
+VsaVisitor::print():for.cond
+sun.0 -> T_i32
+wday.0 -> [0, 7]_i32
+year.0 -> T_i32
+VsaVisitor::print():for.body
+sun.0 -> T_i32
+wday.0 -> [0, 7]_i32
+year.0 -> [4294967137, 2060]_i32
+VsaVisitor::print():for.cond1
+sun.0 -> T_i32
+wday.0 -> [0, 7]_i32
+year.0 -> T_i32
+sun.1 -> T_i32
+wday.1 -> [0, 7]_i32
+mon.0 -> [1, 53]_i32
+VsaVisitor::print():for.body3
+sun.0 -> T_i32
+wday.0 -> [0, 7]_i32
+year.0 -> T_i32
+sun.1 -> T_i32
+wday.1 -> [0, 7]_i32
+mon.0 -> [1, 16]_i32
+VsaVisitor::print():if.then
+inc -> T_i32
+sun.0 -> T_i32
+wday.0 -> [0, 7]_i32
+year.0 -> T_i32
+sun.1 -> T_i32
+wday.1 -> [5, 5]_i32
+mon.0 -> [1, 21]_i32
+VsaVisitor::print():if.end
+rem -> [0, 7]_i32
+add -> T_i32
+sun.0 -> T_i32
+wday.0 -> [0, 7]_i32
+year.0 -> T_i32
+sun.1 -> T_i32
+wday.1 -> [0, 7]_i32
+mon.0 -> [1, 28]_i32
+sun.2 -> T_i32
+VsaVisitor::print():for.inc
+inc5 -> [2, 38]_i32
+rem -> [0, 7]_i32
+add -> T_i32
+sun.0 -> T_i32
+wday.0 -> [0, 7]_i32
+year.0 -> T_i32
+sun.1 -> T_i32
+wday.1 -> [0, 7]_i32
+mon.0 -> [1, 37]_i32
+sun.2 -> T_i32
+VsaVisitor::print():for.end
+sun.0 -> T_i32
+wday.0 -> [0, 7]_i32
+year.0 -> T_i32
+sun.1 -> T_i32
+wday.1 -> [0, 7]_i32
+mon.0 -> [13, 38]_i32
+VsaVisitor::print():for.inc6
+sun.0 -> T_i32
+wday.0 -> [0, 7]_i32
+year.0 -> T_i32
+sun.1 -> T_i32
+wday.1 -> [0, 7]_i32
+mon.0 -> [13, 38]_i32
+inc7 -> T_i32
+VsaVisitor::print():for.end8
+sun.0 -> T_i32
+wday.0 -> [0, 7]_i32
+year.0 -> T_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+for.body#22: 2 36 51 57 72 89 96 113 130 147 165 183 201 219 237 255 273 286 296 306 316 326 
+for.body3#39: 4 8 13 18 23 28 37 43 54 61 69 78 86 99 105 116 122 133 139 151 157 169 175 187 193 205 211 223 229 241 247 259 265 277 288 298 308 318 328 
+for.cond#34: 1 34 46 53 65 74 82 91 98 108 115 125 132 142 150 160 168 178 186 196 204 214 222 232 240 250 258 268 276 284 294 304 314 324 
+for.cond1#42: 3 7 12 17 22 27 35 39 50 56 63 71 80 88 95 101 112 118 129 135 146 153 164 171 182 189 200 207 218 225 236 243 254 261 272 279 285 295 305 315 325 330 
+for.end#34: 29 38 44 55 62 70 79 87 100 106 117 123 134 140 152 158 170 176 188 194 206 212 224 230 242 248 260 266 278 289 299 309 319 329 
+for.end8#13: 148 166 184 202 220 238 256 274 287 297 307 317 327 
+for.inc#38: 6 11 16 21 26 33 45 52 64 73 81 90 97 107 114 124 131 141 149 159 167 177 185 195 203 213 221 231 239 249 257 267 275 283 293 303 313 323 
+for.inc6#34: 32 42 49 60 68 77 85 94 104 111 121 128 138 145 156 163 174 181 192 199 210 217 228 235 246 253 264 271 282 292 302 312 322 333 
+if.end#39: 5 10 15 20 25 31 41 48 59 67 76 84 93 103 110 120 127 137 144 155 162 173 180 191 198 209 216 227 234 245 252 263 270 281 291 301 311 321 332 
+if.then#38: 9 14 19 24 30 40 47 58 66 75 83 92 102 109 119 126 136 143 154 161 172 179 190 197 208 215 226 233 244 251 262 269 280 290 300 310 320 331 
+
+Global state after 9 visits
+VsaVisitor::print():entry
+y -> T_i32
+m -> T_i32
+VsaVisitor::print():sw.bb
+y -> T_i32
+m -> [2, 2]_i32
+rem -> [0, 4]_i32
+VsaVisitor::print():land.lhs.true
+y -> T_i32
+m -> [2, 2]_i32
+rem -> [0, 0]_i32
+rem1 -> [0, 100]_i32
+VsaVisitor::print():lor.lhs.false
+y -> T_i32
+m -> [2, 2]_i32
+rem -> [0, 4]_i32
+rem3 -> [0, 400]_i32
+VsaVisitor::print():if.then
+y -> T_i32
+m -> [2, 2]_i32
+rem -> [0, 4]_i32
+VsaVisitor::print():if.else
+y -> T_i32
+m -> [2, 2]_i32
+rem -> [0, 4]_i32
+rem3 -> [0, 400]_i32
+VsaVisitor::print():sw.bb5
+y -> T_i32
+m -> [4, 11]_i32
+VsaVisitor::print():sw.default
+y -> T_i32
+m -> T_i32
+VsaVisitor::print():return
+y -> T_i32
+m -> T_i32
+retval.0 -> [28, 31]_i32
+
+
+
+
+
+TRACE OF FUNCTION days:
+entry#1: 0 
+if.else#1: 8 
+if.then#1: 7 
+land.lhs.true#1: 5 
+lor.lhs.false#1: 6 
+return#2: 4 9 
+sw.bb#1: 2 
+sw.bb5#1: 3 
+sw.default#1: 1 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/example.c
+
+Global state after 297 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():while.cond
+argc -> T_i32
+a.0 -> T_i32
+b.0 -> T_i32
+VsaVisitor::print():while.body
+sub -> T_i32
+add -> T_i32
+argc -> T_i32
+a.0 -> T_i32
+b.0 -> T_i32
+VsaVisitor::print():while.end
+argc -> T_i32
+a.0 -> T_i32
+b.0 -> T_i32
+VsaVisitor::print():land.lhs.true
+argc -> T_i32
+a.0 -> T_i32
+b.0 -> T_i32
+VsaVisitor::print():if.then
+argc -> T_i32
+a.0 -> T_i32
+b.0 -> [0, 5]_i32
+VsaVisitor::print():sw.bb3
+argc -> T_i32
+a.0 -> [12, 13]_i32
+b.0 -> [0, 5]_i32
+mul -> [24, 26]_i32
+VsaVisitor::print():sw.default
+argc -> T_i32
+a.0 -> T_i32
+b.0 -> [0, 5]_i32
+rem -> [0, 18]_i32
+VsaVisitor::print():sw.epilog
+argc -> T_i32
+a.0 -> T_i32
+b.0 -> [0, 5]_i32
+b.1 -> [0, 26]_i32
+c.0 -> T_i32
+VsaVisitor::print():if.else
+argc -> T_i32
+a.0 -> T_i32
+b.0 -> T_i32
+VsaVisitor::print():if.end
+argc -> T_i32
+a.0 -> T_i32
+b.0 -> T_i32
+a.1 -> T_i32
+b.2 -> T_i32
+c.1 -> T_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+if.else#30: 12 18 25 35 42 52 62 72 82 92 102 112 122 132 142 152 162 172 182 192 202 212 222 232 242 252 262 272 282 292 
+if.end#30: 15 21 29 36 48 55 65 75 85 95 105 115 125 135 145 155 165 175 185 195 205 215 225 235 245 255 265 275 285 295 
+if.then#28: 24 39 47 58 68 78 88 98 108 118 128 138 148 158 168 178 188 198 208 218 228 238 248 258 268 278 288 296 
+land.lhs.true#30: 9 14 20 34 41 51 61 71 81 91 101 111 121 131 141 151 161 171 181 191 201 211 221 231 241 251 261 271 281 291 
+sw.bb#0: 
+sw.bb3#27: 28 44 54 64 74 84 94 104 114 124 134 144 154 164 174 184 194 204 214 224 234 244 254 264 274 284 294 
+sw.default#27: 27 43 53 63 73 83 93 103 113 123 133 143 153 163 173 183 193 203 213 223 233 243 253 263 273 283 293 
+sw.epilog#27: 32 49 59 69 79 89 99 109 119 129 139 149 159 169 179 189 199 209 219 229 239 249 259 269 279 289 297 
+while.body#33: 2 4 6 10 16 22 30 37 45 56 66 76 86 96 106 116 126 136 146 156 166 176 186 196 206 216 226 236 246 256 266 276 286 
+while.cond#34: 1 3 5 8 13 19 26 33 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 
+while.end#31: 7 11 17 23 31 38 46 57 67 77 87 97 107 117 127 137 147 157 167 177 187 197 207 217 227 237 247 257 267 277 287 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/for.c
+
+Global state after 82 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():for.cond
+argc -> T_i32
+x.0 -> T_i32
+i.0 -> [0, 5]_i32
+VsaVisitor::print():for.body
+add -> T_i32
+argc -> T_i32
+x.0 -> T_i32
+i.0 -> [0, 2]_i32
+VsaVisitor::print():for.inc
+inc -> [1, 3]_i32
+add -> T_i32
+argc -> T_i32
+x.0 -> T_i32
+i.0 -> [0, 2]_i32
+VsaVisitor::print():for.end
+argc -> T_i32
+x.0 -> T_i32
+i.0 -> [3, 3]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+for.body#21: 2 5 8 11 15 19 23 27 31 35 39 43 47 51 55 59 63 67 71 75 79 
+for.cond#22: 1 4 7 10 14 18 22 26 30 34 38 42 46 50 54 58 62 66 70 74 78 82 
+for.end#18: 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 
+for.inc#21: 3 6 9 13 17 21 25 29 33 37 41 45 49 53 57 61 65 69 73 77 81 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/gcd.c
+
+Global state after 9 visits
+VsaVisitor::print():entry
+VsaVisitor::print():while.cond
+b.0 -> [0, 8633]_i32
+a.0 -> [1, 8633]_i32
+VsaVisitor::print():while.body
+rem -> [0, 8633]_i32
+b.0 -> [1, 8633]_i32
+a.0 -> [1, 8633]_i32
+VsaVisitor::print():while.end
+b.0 -> [0, 0]_i32
+a.0 -> [1, 8633]_i32
+
+
+
+
+
+TRACE OF FUNCTION gcd:
+entry#1: 0 
+while.body#3: 2 4 7 
+while.cond#4: 1 3 6 9 
+while.end#2: 5 8 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/if-and.c
+
+Global state after 4 visits
+VsaVisitor::print():entry
+add -> [49, 49]_i32
+call -> T_i32
+argc -> T_i32
+VsaVisitor::print():land.lhs.true
+add -> [49, 49]_i32
+call -> [2147483648, 49]_i32
+argc -> T_i32
+VsaVisitor::print():if.then
+add -> [49, 49]_i32
+call -> [2147483648, 49]_i32
+argc -> T_i32
+VsaVisitor::print():if.end
+add -> [49, 49]_i32
+call -> T_i32
+argc -> T_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+if.end#2: 2 4 
+if.then#1: 3 
+land.lhs.true#1: 1 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/if-multiple-of-4.c
+
+Global state after 2 visits
+VsaVisitor::print():entry
+mul -> T_i32
+argc -> T_i32
+VsaVisitor::print():if.then
+mul -> [3, 3]_i32
+argc -> T_i32
+VsaVisitor::print():if.end
+mul -> T_i32
+argc -> T_i32
+y.0 -> [5, 6]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+if.end#1: 2 
+if.then#1: 1 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/if-then-else-2.c
+
+Global state after 2 visits
+VsaVisitor::print():entry
+call -> T_i32
+argc -> T_i32
+VsaVisitor::print():if.then
+call -> [2147483648, 17]_i32
+argc -> T_i32
+add -> [49, 49]_i32
+VsaVisitor::print():if.end
+call -> T_i32
+argc -> T_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+if.end#1: 2 
+if.then#1: 1 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/if-then-else.c
+
+Global state after 2 visits
+VsaVisitor::print():entry
+add -> [49, 49]_i32
+call -> T_i32
+argc -> T_i32
+VsaVisitor::print():if.then
+add -> [49, 49]_i32
+call -> [2147483648, 49]_i32
+argc -> T_i32
+VsaVisitor::print():if.end
+add -> [49, 49]_i32
+call -> T_i32
+argc -> T_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+if.end#1: 2 
+if.then#1: 1 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/if-then-else-complicated.c
+
+Global state after 5 visits
+VsaVisitor::print():entry
+call -> T_i32
+argc -> T_i32
+VsaVisitor::print():if.then
+call -> [2147483648, 17]_i32
+argc -> T_i32
+rem -> [4294967274, 17]_i32
+VsaVisitor::print():if.then2
+call -> [2147483648, 17]_i32
+argc -> T_i32
+add -> [49, 49]_i32
+rem -> [4294967274, 17]_i32
+VsaVisitor::print():if.end
+call -> [2147483648, 17]_i32
+argc -> T_i32
+rem -> [4294967274, 17]_i32
+VsaVisitor::print():if.end4
+call -> T_i32
+argc -> T_i32
+x.0 -> [4294967274, 2147483647]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+if.end#1: 4 
+if.end4#2: 2 5 
+if.then#1: 1 
+if.then2#1: 3 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/if-then-else-two-constraints.c
+
+Global state after 1 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():while.cond
+argc -> T_i32
+x.0 -> [0, 0]_i32
+y.0 -> [18, 18]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+while.body#0: 
+while.cond#1: 1 
+while.end#0: 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/multiple-functions.c
+
+Global state after 2 visits
+VsaVisitor::print():entry
+call -> T_i32
+argc -> T_i32
+VsaVisitor::print():if.then
+call -> [2147483648, 17]_i32
+add -> [49, 49]_i32
+argc -> T_i32
+VsaVisitor::print():if.end
+call -> T_i32
+argc -> T_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+if.end#1: 2 
+if.then#1: 1 
+
+Global state after 2 visits
+VsaVisitor::print():entry
+VsaVisitor::print():while.cond
+b.0 -> [8633, 8633]_i32
+a.0 -> [7387, 7387]_i32
+VsaVisitor::print():while.end
+b.0 -> [8633, 8633]_i32
+a.0 -> [7387, 7387]_i32
+
+
+
+
+
+TRACE OF FUNCTION gcd:
+entry#1: 0 
+while.body#0: 
+while.cond#1: 1 
+while.end#1: 2 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/ops.c
+
+Global state after 0 visits
+VsaVisitor::print():entry
+add -> [6, 6]_i32
+add1 -> [3, 3]_i32
+sub -> [4, 4]_i32
+sub2 -> [7, 7]_i32
+mul -> [10, 10]_i32
+mul3 -> [4294967286, 4294967286]_i32
+div -> [1, 1]_i32
+argc -> T_i32
+div4 -> T_i32
+div5 -> [2, 2]_i32
+div6 -> T_i32
+rem -> [0, 5]_i32
+rem7 -> [0, 5]_i32
+rem8 -> [0, 2]_i32
+rem9 -> [0, 2]_i32
+shl -> T_i32
+shl10 -> T_i32
+shr -> T_i32
+shr11 -> T_i32
+shr12 -> T_i32
+shr13 -> T_i32
+and -> T_i32
+and14 -> T_i32
+or -> T_i32
+or15 -> T_i32
+xor -> T_i32
+xor16 -> T_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/switch-2.c
+
+Global state after 1 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():while.cond
+argc -> T_i32
+x.0 -> [0, 0]_i32
+y.0 -> [6, 6]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+sw.bb#0: 
+sw.bb1#0: 
+sw.default#0: 
+sw.epilog#0: 
+while.body#0: 
+while.cond#1: 1 
+while.end#0: 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/switch-3.c
+
+Global state after 1 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():while.cond
+argc -> T_i32
+x.0 -> [0, 0]_i32
+y.0 -> [6, 6]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+if.end#0: 
+if.then#0: 
+sw.bb#0: 
+sw.bb2#0: 
+sw.default#0: 
+sw.epilog#0: 
+while.body#0: 
+while.cond#1: 1 
+while.end#0: 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/switch.c
+
+Global state after 4 visits
+VsaVisitor::print():entry
+call -> T_i32
+argc -> T_i32
+inc -> [1, 1]_i32
+VsaVisitor::print():sw.bb
+call -> [3, 3]_i32
+argc -> T_i32
+inc -> [1, 1]_i32
+VsaVisitor::print():sw.bb1
+call -> [5, 5]_i32
+argc -> T_i32
+add -> [6, 6]_i32
+inc -> [1, 1]_i32
+VsaVisitor::print():sw.epilog
+call -> T_i32
+argc -> T_i32
+add2 -> [8, 13]_i32
+inc -> [1, 1]_i32
+y.0 -> [1, 6]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+sw.bb#1: 2 
+sw.bb1#1: 3 
+sw.epilog#2: 1 4 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/switch-two-labels.c
+
+Global state after 4 visits
+VsaVisitor::print():entry
+call -> T_i32
+argc -> T_i32
+inc -> [1, 1]_i32
+VsaVisitor::print():sw.bb
+call -> [3, 8]_i32
+argc -> T_i32
+inc -> [1, 1]_i32
+VsaVisitor::print():sw.bb1
+call -> [5, 5]_i32
+argc -> T_i32
+add -> [6, 6]_i32
+inc -> [1, 1]_i32
+VsaVisitor::print():sw.epilog
+call -> T_i32
+argc -> T_i32
+add2 -> [8, 15]_i32
+inc -> [1, 1]_i32
+y.0 -> [1, 8]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+sw.bb#1: 2 
+sw.bb1#1: 3 
+sw.epilog#2: 1 4 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/while-1.c
+
+Global state after 15 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():while.cond
+argc -> T_i32
+x.0 -> [0, 47]_i32
+VsaVisitor::print():while.body
+inc -> [1, 24]_i32
+argc -> T_i32
+x.0 -> [0, 23]_i32
+VsaVisitor::print():while.end
+argc -> T_i32
+x.0 -> [18, 24]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+while.body#7: 2 4 6 8 10 12 14 
+while.cond#7: 1 3 5 7 9 11 13 
+while.end#1: 15 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/while-2.c
+
+Global state after 21 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():while.cond
+argc -> T_i32
+x.0 -> [0, 383]_i32
+VsaVisitor::print():while.body
+inc -> [1, 192]_i32
+argc -> T_i32
+x.0 -> [0, 191]_i32
+VsaVisitor::print():while.end
+argc -> T_i32
+x.0 -> [101, 192]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+while.body#10: 2 4 6 8 10 12 14 16 18 20 
+while.cond#10: 1 3 5 7 9 11 13 15 17 19 
+while.end#1: 21 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/while-bigger-steps.c
+
+Global state after 13 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():while.cond
+argc -> T_i32
+x.0 -> [0, 299]_i32
+VsaVisitor::print():while.body
+add -> [13, 156]_i32
+argc -> T_i32
+x.0 -> [0, 143]_i32
+VsaVisitor::print():while.end
+argc -> T_i32
+x.0 -> [81, 156]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+while.body#6: 2 4 6 8 10 12 
+while.cond#6: 1 3 5 7 9 11 
+while.end#1: 13 
+##
+/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/lib/Transforms/ValueSetAnalysis/samples/while-neg.c
+
+Global state after 2 visits
+VsaVisitor::print():entry
+argc -> T_i32
+VsaVisitor::print():while.cond
+argc -> T_i32
+x.0 -> [0, 0]_i32
+VsaVisitor::print():while.end
+add -> [0, 0]_i32
+mul -> [0, 0]_i32
+argc -> T_i32
+x.0 -> [0, 0]_i32
+
+
+
+
+
+TRACE OF FUNCTION main:
+entry#1: 0 
+while.body#0: 
+while.cond#1: 1 
+while.end#1: 2 
+
+TEST SUMMARY:
+Run: [0;32madd-1.c[0m
+Run: [0;32madd-2.c[0m
+Run: [0;32madd-3.c[0m
+Run: [0;32madd-4.c[0m
+Run: [0;32mcmp-two-variables-1.c[0m
+Run: [0;32mcmp-two-variables-2.c[0m
+Run: [0;32meuler-48.c[0m
+Run: [0;32meuler.c[0m
+Run: [0;32mexample.c[0m
+Run: [0;32mfor.c[0m
+Run: [0;32mgcd.c[0m
+Run: [0;32mif-and.c[0m
+Run: [0;32mif-multiple-of-4.c[0m
+Run: [0;32mif-then-else-2.c[0m
+Run: [0;32mif-then-else.c[0m
+Run: [0;32mif-then-else-complicated.c[0m
+Run: [0;32mif-then-else-two-constraints.c[0m
+Run: [0;32mmultiple-functions.c[0m
+Run: [0;32mops.c[0m
+Run: [0;32mswitch-2.c[0m
+Run: [0;32mswitch-3.c[0m
+Run: [0;32mswitch.c[0m
+Run: [0;32mswitch-two-labels.c[0m
+Run: [0;32mwhile-1.c[0m
+Run: [0;32mwhile-2.c[0m
+Run: [0;32mwhile-bigger-steps.c[0m
+Run: [0;32mwhile-neg.c[0m
+
