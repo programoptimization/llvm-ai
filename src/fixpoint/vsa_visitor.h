@@ -24,7 +24,7 @@ class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 
 public:
   VsaVisitor(WorkList &q, CallHierarchy callHierarchy, std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>>& programPoints)
-      : worklist(q), currentCallHierarchy_(std::move(callHierarchy)), programPoints(programPoints)/*, bcs(programPoints)*/{
+      : worklist(q), currentCallHierarchy_(std::move(callHierarchy)), programPoints(programPoints), shouldRun(true) /*, bcs(programPoints)*/{
     auto mainReturnType = currentCallHierarchy_.getCurrentFunction()->getReturnType();
     mainReturnDomain = AD_TYPE::create_bottom(mainReturnType->getIntegerBitWidth());
   };
@@ -99,8 +99,8 @@ public:
   /// default
   void visitInstruction(Instruction &I);
 
-  void upsertNewState(TerminatorInst &I);
-  void mergeAbstractDomains(CallInst& lastCallInst, const CallHierarchy& lastCallHierarchy, ReturnInst &returnInst);
+  void upsertNewState(BasicBlock *currentBB);
+  void mergeReturnDomains(CallInst &lastCallInst, CallHierarchy &lastCallHierarchy, std::shared_ptr<AbstractDomain> returnDomain);
 
 
   /// print state of all basic blocks
@@ -109,7 +109,7 @@ public:
   /// return the program points
   std::map<BasicBlock *, State> &getProgramPoints();
   std::map<BasicBlock *, State> const& getProgramPoints() const;
-  std::map<BasicBlock *, State> &getProgramPoints(const CallHierarchy& callHierarchy);
+  std::map<BasicBlock *, State> &getProgramPoints(CallHierarchy& callHierarchy);
 
   void setCurrentCallHierarchy(CallHierarchy callHierarchy) {
     this->currentCallHierarchy_ = std::move(callHierarchy);
@@ -117,6 +117,10 @@ public:
 
   AbstractDomain& getMainReturnDomain() const {
     return *mainReturnDomain;
+  }
+
+  void makeRunnable() {
+    shouldRun = true;
   }
 
 private:
@@ -127,7 +131,7 @@ private:
     std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>> &valuePair);
 
   /// Returns the current call hierarchy
-  pcpo::CallHierarchy const &getCurrentCallHierarchy() {
+  pcpo::CallHierarchy &getCurrentCallHierarchy() {
     return currentCallHierarchy_;
   }
 
@@ -145,8 +149,9 @@ private:
   WorkList &worklist;
   pcpo::CallHierarchy currentCallHierarchy_;
   std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
-//  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
   std::shared_ptr<AbstractDomain> mainReturnDomain;
+  bool shouldRun;
+//  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
 };
 } // namespace pcpo
 

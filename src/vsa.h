@@ -53,16 +53,13 @@ public:
       STD_OUTPUT("Visiting function: `" << item.hierarchy.getCurrentFunction()->getName() << "` :: BB address: `" << item.block << "`");
 
       vis.setCurrentCallHierarchy(item.hierarchy);
-      vis.visit(item.block);
-      numberOfItemsVisited++;
+      vis.visit(*item.block);
+      vis.makeRunnable();
 
-      if (numberOfItemsVisited % 1000000 == 0) {
-        STD_OUTPUT("Number of visited basic blocks: " << numberOfItemsVisited);
-      }
+      numberOfItemsVisited++;
     }
 
     // todo: Use `mainReturnDomain` to create VsaResult object
-
     auto& mainReturnDomain = vis.getMainReturnDomain();
 
     llvm::errs() << "Main return domain: " << mainReturnDomain;

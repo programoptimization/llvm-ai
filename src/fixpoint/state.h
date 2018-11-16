@@ -31,6 +31,8 @@ public:
   /// find abstracd domain of a value, return bottom if there is none
   shared_ptr<AbstractDomain> findAbstractValueOrBottom(Value* v) const;
 
+  shared_ptr<AbstractDomain> findAbstractValueOrNull(Value* v) const;
+
     /// return if a global sate for this variable is available
   bool isAvailable(Value *v) const;
 

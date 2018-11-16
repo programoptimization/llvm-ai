@@ -13,16 +13,21 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
   /// and insert values s.t. arg -> T
   const auto numPreds = std::distance(pred_begin(&BB), pred_end(&BB));
   if (numPreds == 0) {
-    /// mark state such that it is not bottom any more
-    newState.markVisited();
+    auto& oldState = getProgramPoints()[&BB];
+    /// mark state such that it cannot be bottom at any time
+    oldState.markVisited();
 
-    for (auto &arg : BB.getParent()->args()) {
-      if (arg.getType()->isIntegerTy()) {
-        auto argumentDomain = getProgramPoints()[&BB].findAbstractValueOrBottom(&arg);
+    newState = oldState;
 
-        newState.put(arg, argumentDomain);
-      }
-    }
+//    for (auto &arg : BB.getParent()->args()) {
+//      if (arg.getType()->isIntegerTy()) {
+//        auto argumentDomain = getProgramPoints()[&BB].findAbstractValueOrNull(&arg);
+//
+//        if (argumentDomain != nullptr) {
+//          newState.put(arg, argumentDomain);
+//        }
+//      }
+//    }
 
     return;
   }
@@ -61,8 +66,7 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
       "VsaVisitor::visitBasicBlock: newState is still bottom!");
 }
 
-void VsaVisitor::upsertNewState(TerminatorInst &I) {
-  const auto currentBB = I.getParent();
+void VsaVisitor::upsertNewState(BasicBlock *currentBB) {
   const auto oldState = getProgramPoints().find(currentBB);
   if (oldState != getProgramPoints().end()) {
     DEBUG_OUTPUT("visitTerminationInst: old state found");
@@ -96,9 +100,11 @@ void VsaVisitor::upsertNewState(TerminatorInst &I) {
 /// If any additional logic is added to this function,
 /// consider also updating those specialised versions.
 void VsaVisitor::visitTerminatorInst(TerminatorInst &I) {
+  if (!shouldRun) { return; }
+
   DEBUG_OUTPUT("visitTerminationInst: entered");
 
-  upsertNewState(I);
+  upsertNewState(I.getParent());
 
   DEBUG_OUTPUT(
       "visitTerminationInst: state has been changed -> push successors");
@@ -110,6 +116,8 @@ void VsaVisitor::visitTerminatorInst(TerminatorInst &I) {
 }
 
 void VsaVisitor::visitBranchInst(BranchInst &I) {
+  if (!shouldRun) { return; }
+
   const auto cond = I.getOperand(0);
 
   DEBUG_OUTPUT("CONDITIONAL BRANCHES: TEST");
@@ -171,6 +179,8 @@ void VsaVisitor::putBothBranchConditions(
 }
 
 void VsaVisitor::visitSwitchInst(SwitchInst &I) {
+  if (!shouldRun) { return; }
+
   const auto cond = I.getCondition();
 
   /// this will be the values for default. We (potentially) shrink this with
@@ -233,6 +243,8 @@ void VsaVisitor::visitSwitchInst(SwitchInst &I) {
 }
 
 void VsaVisitor::visitLoadInst(LoadInst &I) {
+  if (!shouldRun) { return; }
+
   // Crash fix: The LoadInst can load a pointer too so that getIntegerBitWidth
   //            crashes if assertions are enabled. Mainly encountered on
   //            Windows where clang yields different output when compiling
@@ -244,6 +256,8 @@ void VsaVisitor::visitLoadInst(LoadInst &I) {
 }
 
 void VsaVisitor::visitPHINode(PHINode &I) {
+  if (!shouldRun) { return; }
+
   /// bottom as initial value
   auto bs = AD_TYPE::create_bottom(I.getType()->getIntegerBitWidth());
 
@@ -304,32 +318,27 @@ void VsaVisitor::visitPHINode(PHINode &I) {
 }
 
 void VsaVisitor::visitCallInst(CallInst &I) {
+  if (!shouldRun) { return; }
 
-  auto &currentProgramPoints = getProgramPoints();
-  auto callResult = currentProgramPoints.find(I.getParent());
-  const bool visitedCalleeAlready = (callResult != currentProgramPoints.end());
+  auto currentCallHierarchy = getCurrentCallHierarchy();
+  auto calleeCallHierarchy = currentCallHierarchy.push(&I);
 
-  //TODO REMOVE DEBUG OUTPUT
-  if (visitedCalleeAlready) {
-    llvm::errs() << I << " " << *(callResult->second.findAbstractValueOrBottom(&I)) << "\n";
-  } else {
-    llvm::errs() << I << " domain is bottom" << "\n";
-  }
+  auto &calleeProgramPoints = getProgramPoints(calleeCallHierarchy);
+  auto callResult = calleeProgramPoints.find(&(I.getCalledFunction()->front()));
+  const bool visitedCalleeAlready = (callResult != calleeProgramPoints.end());
 
   auto calledFunction = I.getCalledFunction();
 
   auto &calleeBB = calledFunction->front();
-  auto callerBB = I.getParent();
-
-  auto currentCallHierarchy = getCurrentCallHierarchy();
-  auto calleeHierarchy = currentCallHierarchy.push(&I);
+  auto &calleeState = calleeProgramPoints[&calleeBB];
 
   // propagate the argument values to function parameters
   auto functionArgIt = I.arg_begin();
   auto functionParamIt = calledFunction->arg_begin();
 
   bool paramDomainChanged = false;
-  
+
+  //TODO ensure arguments are correctly merged to parameters' abstract domains
   for (; functionArgIt != I.arg_end() && functionParamIt != calledFunction->arg_end();
          functionArgIt++, functionParamIt++) {
     auto &functionArg = *functionArgIt;
@@ -337,36 +346,43 @@ void VsaVisitor::visitCallInst(CallInst &I) {
 
     auto &functionParam = *functionParamIt;
 
-    // If there is no old domain, we get top.
-    auto oldParamDomain = getProgramPoints()[&calleeBB].findAbstractValueOrBottom(&functionParam);
-    auto argDomain = getProgramPoints()[callerBB].getAbstractValue(functionArgValue);
+    auto oldParamDomain = calleeState.findAbstractValueOrBottom(&functionParam);
+    auto argDomain = newState.getAbstractValue(functionArgValue);
     auto newDomain = oldParamDomain->leastUpperBound(*argDomain);
 
-    // TODO: check if this SHOULD MEAN that old and new domain are the same
-    if (newDomain <= oldParamDomain && oldParamDomain <= newDomain) {
+    if (newDomain <= oldParamDomain) {
       continue;
     }
 
-    getProgramPoints()[&calleeBB].put(functionParam, newDomain);
+    calleeState.markVisited();
+    calleeState.put(functionParam, newDomain);
     paramDomainChanged = true;
   }
 
   assert(functionArgIt == I.arg_end() && functionParamIt == calledFunction->arg_end());
 
   if (paramDomainChanged || !visitedCalleeAlready) {
-    worklist.push({calleeHierarchy, &calleeBB});
+    worklist.push({calleeCallHierarchy, &calleeBB});
   }
 
+  if (!visitedCalleeAlready) {
+    shouldRun = false;
+    //TODO think whether this call is required here
+//    upsertNewState(currentBB);
+    return;
+  }
 }
 
 void VsaVisitor::visitReturnInst(ReturnInst &I) {
+  if (!shouldRun) { return; }
+
+  auto returnDomain = newState.findAbstractValueOrBottom(I.getReturnValue());
+
   // updates global program points with the new state
-  upsertNewState(I);
+  upsertNewState(I.getParent());
 
   auto &currentCallHierarchy = getCurrentCallHierarchy();
   auto lastCallInstruction = currentCallHierarchy.getLastCallInstruction();
-
-  auto returnDomain = getProgramPoints()[I.getParent()].findAbstractValueOrBottom(I.getReturnValue());
 
   // When the return is in a main, there is no last call.
   if (lastCallInstruction == nullptr) {
@@ -376,21 +392,17 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
     return;
   }
 
-  if (returnDomain->isBottom()) {
-    pushSuccessors(I);
-    return;
-  }
-
   if (CallHierarchy::callStringDepth() != 0) {
     // shift the call hierarchy window to the left
     auto lastCallHierarchy = getCurrentCallHierarchy().pop(1);
-    mergeAbstractDomains(*lastCallInstruction, lastCallHierarchy, I);
+    mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain);
     worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
 
     pushSuccessors(I);
     return;
   }
 
+  // if call string depth is zero
 
   auto currentFunction = I.getFunction();
   auto functionUses = currentFunction->uses();
@@ -411,7 +423,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
     }
 
     auto callInst = llvm::cast<CallInst>(call);
-    mergeAbstractDomains(*callInst, currentCallHierarchy, I);
+    mergeReturnDomains(*callInst, currentCallHierarchy, returnDomain);
 
     worklist.push({currentCallHierarchy, callerBB});
   }
@@ -419,20 +431,22 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   pushSuccessors(I);
 }
 
-void VsaVisitor::mergeAbstractDomains(CallInst &lastCallInst,
-                                      const CallHierarchy &lastCallHierarchy,
-                                      ReturnInst &returnInst) {
+void VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
+                                    CallHierarchy &lastCallHierarchy,
+                                    std::shared_ptr<AbstractDomain> returnDomain) {
   auto &lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallInst.getParent()];
-
-  auto returnValue = returnInst.getReturnValue();
-  auto returnDomain = getProgramPoints()[returnInst.getParent()].findAbstractValueOrBottom(returnValue);
   auto oldCallInstDomain = lastCallProgramPoints.findAbstractValueOrBottom(&lastCallInst);
   auto newCallInstDomain = oldCallInstDomain->leastUpperBound(*returnDomain);
+
+  STD_OUTPUT("Return domain: `" << *returnDomain);
+  STD_OUTPUT("New call instruction domain: `" << *newCallInstDomain);
 
   lastCallProgramPoints.put(lastCallInst, newCallInstDomain);
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -441,6 +455,8 @@ void VsaVisitor::visitAdd(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitSub(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -449,6 +465,8 @@ void VsaVisitor::visitSub(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitMul(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -457,6 +475,8 @@ void VsaVisitor::visitMul(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitURem(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -464,6 +484,8 @@ void VsaVisitor::visitURem(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitSRem(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -471,6 +493,8 @@ void VsaVisitor::visitSRem(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitUDiv(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -478,6 +502,8 @@ void VsaVisitor::visitUDiv(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitSDiv(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -485,6 +511,8 @@ void VsaVisitor::visitSDiv(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitAnd(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -492,6 +520,8 @@ void VsaVisitor::visitAnd(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitOr(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -499,6 +529,8 @@ void VsaVisitor::visitOr(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitXor(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -506,6 +538,8 @@ void VsaVisitor::visitXor(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitShl(Instruction &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -514,6 +548,8 @@ void VsaVisitor::visitShl(Instruction &I) {
 }
 
 void VsaVisitor::visitLShr(Instruction &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -521,6 +557,8 @@ void VsaVisitor::visitLShr(Instruction &I) {
 }
 
 void VsaVisitor::visitAShr(Instruction &I) {
+  if (!shouldRun) { return; }
+
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
 
@@ -528,15 +566,21 @@ void VsaVisitor::visitAShr(Instruction &I) {
 }
 
 void VsaVisitor::visitBinaryOperator(BinaryOperator &I) {
+  if (!shouldRun) { return; }
+
   STD_OUTPUT("visited binary instruction");
 }
 
 void VsaVisitor::visitUnaryInstruction(UnaryInstruction &I) {
+  if (!shouldRun) { return; }
+
   /// interesting ones here would be the ext/trunc instructions, i.e.
   /// sext, zext, trunc
 }
 
 void VsaVisitor::visitInstruction(Instruction &I) {
+  if (!shouldRun) { return; }
+
   DEBUG_OUTPUT("visitInstruction: " << I.getOpcodeName());
 }
 
@@ -562,7 +606,7 @@ std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints() {
   return programPoints[currentCallHierarchy_];
 }
 
-std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints(const CallHierarchy &callHierarchy) {
+std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints(CallHierarchy &callHierarchy) {
   return programPoints[callHierarchy];
 }
 
@@ -583,4 +627,5 @@ DominatorTree const &VsaVisitor::getCurrentDominatorTree() {
 
   return itr->second;
 }
+
 } // namespace pcpo
