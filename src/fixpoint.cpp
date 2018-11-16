@@ -24,9 +24,9 @@ char AbstractInterpretationPass::ID;
 
 llvm::raw_ostream& dbg(int level) {
     if (level <= DEBUG_LEVEL) {
-        return errs();
+        return llvm::errs();
     } else {
-        return nulls();
+        return llvm::nulls();
     }
 }
 
