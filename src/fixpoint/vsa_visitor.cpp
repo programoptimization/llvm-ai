@@ -18,7 +18,7 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
 
     for (auto &arg : BB.getParent()->args()) {
       if (arg.getType()->isIntegerTy()) {
-        auto argumentDomain = getProgramPoints()[&BB].getAbstractValue(&arg);
+        auto argumentDomain = getProgramPoints()[&BB].findAbstractValueOrBottom(&arg);
 
         newState.put(arg, argumentDomain);
       }
@@ -311,7 +311,7 @@ void VsaVisitor::visitCallInst(CallInst &I) {
 
   //TODO REMOVE DEBUG OUTPUT
   if (visitedCalleeAlready) {
-    llvm::errs() << I << " " << *(callResult->second.getAbstractValue(&I)) << "\n";
+    llvm::errs() << I << " " << *(callResult->second.findAbstractValueOrBottom(&I)) << "\n";
   } else {
     llvm::errs() << I << " domain is bottom" << "\n";
   }
@@ -338,15 +338,15 @@ void VsaVisitor::visitCallInst(CallInst &I) {
     auto &functionParam = *functionParamIt;
 
     // If there is no old domain, we get top.
-    auto oldParamDomain = getProgramPoints()[&calleeBB].getAbstractValue(&functionParam);
+    auto oldParamDomain = getProgramPoints()[&calleeBB].findAbstractValueOrBottom(&functionParam);
     auto argDomain = getProgramPoints()[callerBB].getAbstractValue(functionArgValue);
     auto newDomain = oldParamDomain->leastUpperBound(*argDomain);
 
+    // TODO: check if this SHOULD MEAN that old and new domain are the same
     if (newDomain <= oldParamDomain && oldParamDomain <= newDomain) {
-      // TODO: check if this SHOULD MEAN that old and new domain are the same
-      continue;     
+      continue;
     }
-    
+
     getProgramPoints()[&calleeBB].put(functionParam, newDomain);
     paramDomainChanged = true;
   }
@@ -370,6 +370,9 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
 
   // When the return is in a main, there is no last call.
   if (lastCallInstruction == nullptr) {
+    auto returnDomain = getProgramPoints()[I.getParent()].findAbstractValueOrBottom(I.getReturnValue());
+    mainReturnDomain = mainReturnDomain->leastUpperBound(*returnDomain);
+
     pushSuccessors(I);
     return;
   }
@@ -419,8 +422,8 @@ void VsaVisitor::mergeAbstractDomains(CallInst &lastCallInst,
   auto &lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallInst.getParent()];
 
   auto returnValue = returnInst.getReturnValue();
-  auto returnDomain = getProgramPoints()[returnInst.getParent()].getAbstractValue(returnValue);
-  auto oldCallInstDomain = lastCallProgramPoints.getAbstractValue(&lastCallInst);
+  auto returnDomain = getProgramPoints()[returnInst.getParent()].findAbstractValueOrBottom(returnValue);
+  auto oldCallInstDomain = lastCallProgramPoints.findAbstractValueOrBottom(&lastCallInst);
   auto newCallInstDomain = oldCallInstDomain->leastUpperBound(*returnDomain);
 
   lastCallProgramPoints.put(lastCallInst, newCallInstDomain);

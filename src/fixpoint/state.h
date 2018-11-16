@@ -28,7 +28,10 @@ public:
   /// get abstract domain of variable
   shared_ptr<AbstractDomain> getAbstractValue(Value *v) const;
 
-  /// return if a global sate for this variable is available
+  /// find abstracd domain of a value, return bottom if there is none
+  shared_ptr<AbstractDomain> findAbstractValueOrBottom(Value* v) const;
+
+    /// return if a global sate for this variable is available
   bool isAvailable(Value *v) const;
 
   /// create least upper bound (lub) in place

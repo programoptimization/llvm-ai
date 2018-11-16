@@ -38,7 +38,6 @@ bool State::put(Value &v, std::shared_ptr<AbstractDomain> ad) {
   return true;
 }
 
-// Todo: create a method that will return BOTTOM instead of TOP if not found.
 shared_ptr<AbstractDomain> State::getAbstractValue(Value *v) const {
 
   if (ConstantInt::classof(v)) {
@@ -53,6 +52,20 @@ shared_ptr<AbstractDomain> State::getAbstractValue(Value *v) const {
   DEBUG_OUTPUT("State::getAbstractValue " << v->getName() << " : failed");
 
   return AD_TYPE::create_top(v->getType()->getIntegerBitWidth());
+}
+
+shared_ptr<AbstractDomain> State::findAbstractValueOrBottom(Value* v) const {
+  if (ConstantInt::classof(v)) {
+    return shared_ptr<AbstractDomain>(new AD_TYPE(reinterpret_cast<ConstantInt *>(v)->getValue()));
+  }
+
+  const auto find = vars.find(v);
+
+  if (find != vars.end()) {
+    return find->second;
+  }
+
+  return AD_TYPE::create_bottom(v->getType()->getIntegerBitWidth());
 }
 
 bool State::isAvailable(Value *v) const {

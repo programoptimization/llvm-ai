@@ -24,7 +24,10 @@ class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 
 public:
   VsaVisitor(WorkList &q, CallHierarchy callHierarchy, std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>>& programPoints)
-      : worklist(q), currentCallHierarchy_(std::move(callHierarchy)), programPoints(programPoints)/*, bcs(programPoints)*/{};
+      : worklist(q), currentCallHierarchy_(std::move(callHierarchy)), programPoints(programPoints)/*, bcs(programPoints)*/{
+    auto mainReturnType = currentCallHierarchy_.getCurrentFunction()->getReturnType();
+    mainReturnDomain = AD_TYPE::create_bottom(mainReturnType->getIntegerBitWidth());
+  };
 
   /// create lub of states of preceeding basic blocks and use it as newState;
   /// the visitor automatically visits all instructions of this basic block
@@ -112,6 +115,10 @@ public:
     this->currentCallHierarchy_ = std::move(callHierarchy);
   }
 
+  AbstractDomain& getMainReturnDomain() const {
+    return *mainReturnDomain;
+  }
+
 private:
   /// push directly reachable basic blocks onto worklist
   void pushSuccessors(TerminatorInst &I);
@@ -139,6 +146,7 @@ private:
   pcpo::CallHierarchy currentCallHierarchy_;
   std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
 //  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
+  std::shared_ptr<AbstractDomain> mainReturnDomain;
 };
 } // namespace pcpo
 
