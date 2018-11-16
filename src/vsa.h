@@ -50,6 +50,8 @@ public:
     while (!worklist.empty()) {
       auto item = worklist.pop();
 
+      STD_OUTPUT("Visiting function: `" << item.hierarchy.getCurrentFunction()->getName() << "` :: BB address: `" << item.block << "`");
+
       vis.setCurrentCallHierarchy(item.hierarchy);
       vis.visit(item.block);
       numberOfItemsVisited++;

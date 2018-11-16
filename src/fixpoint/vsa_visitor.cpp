@@ -360,23 +360,26 @@ void VsaVisitor::visitCallInst(CallInst &I) {
 }
 
 void VsaVisitor::visitReturnInst(ReturnInst &I) {
-
   // updates global program points with the new state
   upsertNewState(I);
 
   auto &currentCallHierarchy = getCurrentCallHierarchy();
   auto lastCallInstruction = currentCallHierarchy.getLastCallInstruction();
 
+  auto returnDomain = getProgramPoints()[I.getParent()].findAbstractValueOrBottom(I.getReturnValue());
 
   // When the return is in a main, there is no last call.
   if (lastCallInstruction == nullptr) {
-    auto returnDomain = getProgramPoints()[I.getParent()].findAbstractValueOrBottom(I.getReturnValue());
     mainReturnDomain = mainReturnDomain->leastUpperBound(*returnDomain);
 
     pushSuccessors(I);
     return;
   }
 
+  if (returnDomain->isBottom()) {
+    pushSuccessors(I);
+    return;
+  }
 
   if (CallHierarchy::callStringDepth() != 0) {
     // shift the call hierarchy window to the left
@@ -387,6 +390,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
     pushSuccessors(I);
     return;
   }
+
 
   auto currentFunction = I.getFunction();
   auto functionUses = currentFunction->uses();
@@ -413,7 +417,6 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   }
 
   pushSuccessors(I);
-
 }
 
 void VsaVisitor::mergeAbstractDomains(CallInst &lastCallInst,
