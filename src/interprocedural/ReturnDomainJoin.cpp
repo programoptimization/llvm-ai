@@ -27,7 +27,7 @@ public:
       llvm_unreachable("The ReturnInst is required to have a present domain!");
     }
 
-    auto current = state->second.getAbstractValue(I.getReturnValue());
+    auto current = state->second.findAbstractValueOrBottom(I.getReturnValue());
 
     if (return_domain_) {
       return_domain_->leastUpperBound(*current);
@@ -38,12 +38,17 @@ public:
 };
 } // namespace
 
-void joinReturnDomain(std::map<BasicBlock *, State> const &program_points,
-                      std::shared_ptr<AbstractDomain> return_domain) {
+std::shared_ptr<pcpo::AbstractDomain>
+joinReturnDomain(std::map<BasicBlock *, State> const &program_points) {
+  std::shared_ptr<AbstractDomain> return_domain;
+
   for (auto &&entry : program_points) {
     BasicBlock *block = entry.first;
 
     ReturnDomainVisitor visitor(program_points, block, return_domain);
     visitor.visit(block);
   }
+
+  assert(return_domain);
+  return return_domain;
 }
