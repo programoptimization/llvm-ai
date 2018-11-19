@@ -25,8 +25,6 @@ class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 public:
   VsaVisitor(WorkList &q, CallHierarchy callHierarchy, std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>>& programPoints)
       : worklist(q), currentCallHierarchy_(std::move(callHierarchy)), programPoints(programPoints), shouldRun(true) /*, bcs(programPoints)*/{
-    auto mainReturnType = currentCallHierarchy_.getCurrentFunction()->getReturnType();
-    mainReturnDomain = AD_TYPE::create_bottom(mainReturnType->getIntegerBitWidth());
   };
 
   /// create lub of states of preceeding basic blocks and use it as newState;
@@ -112,8 +110,6 @@ public:
 
   void setCurrentCallHierarchy(CallHierarchy callHierarchy);
 
-  AbstractDomain& getMainReturnDomain() const;
-
   void makeRunnable();
 
 private:
@@ -136,7 +132,6 @@ private:
   WorkList &worklist;
   pcpo::CallHierarchy currentCallHierarchy_;
   std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
-  std::shared_ptr<AbstractDomain> mainReturnDomain;
   bool shouldRun;
   std::unordered_map<llvm::Function *, DominatorTree> dominatorTreeCache;
 //  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;

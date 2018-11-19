@@ -59,9 +59,6 @@ public:
       numberOfItemsVisited++;
     }
 
-    // todo: Use `mainReturnDomain` to create VsaResult object
-    auto &mainReturnDomain = vis.getMainReturnDomain();
-
     for (auto &&entry : programPoints) {
       CallHierarchy const hierarchy = entry.first;
       Function *currentFunction = hierarchy.getCurrentFunction();

@@ -387,8 +387,6 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
 
   // When the return is in a main, there is no last call.
   if (lastCallInstruction == nullptr) {
-    mainReturnDomain = mainReturnDomain->leastUpperBound(*returnDomain);
-
     pushSuccessors(I);
     return;
   }
@@ -630,10 +628,6 @@ DominatorTree const &VsaVisitor::getCurrentDominatorTree() {
 
 void VsaVisitor::setCurrentCallHierarchy(CallHierarchy callHierarchy) {
   this->currentCallHierarchy_ = std::move(callHierarchy);
-}
-
-AbstractDomain &VsaVisitor::getMainReturnDomain() const {
-  return *mainReturnDomain;
 }
 
 void VsaVisitor::makeRunnable() {
