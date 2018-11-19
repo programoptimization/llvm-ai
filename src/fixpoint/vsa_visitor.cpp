@@ -9,6 +9,7 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
   newState = State();
   DEBUG_OUTPUT("visitBasicBlock: entered " << BB.getName());
 
+  /// First Basic block in a function:
   /// bb has no predecessors: return empty state which is not bottom!
   /// and insert values s.t. arg -> T
   const auto numPreds = std::distance(pred_begin(&BB), pred_end(&BB));
@@ -394,7 +395,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
 
   if (CallHierarchy::callStringDepth() != 0) {
     // shift the call hierarchy window to the left
-    auto lastCallHierarchy = getCurrentCallHierarchy().pop(1);
+    auto lastCallHierarchy = getCurrentCallHierarchy().pop();
     mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain);
     worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
 
