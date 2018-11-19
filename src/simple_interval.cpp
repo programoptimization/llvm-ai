@@ -7,6 +7,15 @@ SimpleInterval::SimpleInterval(llvm::Constant& constant) {
         state = NORMAL;
         begin = c->getValue();
         end = c->getValue();
+        return;
+    }
+    if (llvm::UndefValue* c = llvm::dyn_cast<llvm::UndefValue>(&constant)) {
+        if (llvm::IntegerType* ty = llvm::dyn_cast<llvm::IntegerType>(c->getType())) {
+            state = NORMAL;
+            begin = APInt::getNullValue(ty->getBitWidth());
+            end = begin;
+        }
+        
     } else {
         state = TOP;
     }
@@ -82,17 +91,20 @@ SimpleInterval SimpleInterval::interpret(
 
     SimpleInterval a = operands[0];
     SimpleInterval b = operands[1];
-    if (a.isBottom() or b.isBottom()) return SimpleInterval {};
-
+    
     // The following functions do not really want to deal with TOP. (Keep in mind that we do not
     // need to always returns TOP, e.g. when doing division.) So instead we pass the full interval.
     a = a._makeTopInterval(bitWidth);
     b = b._makeTopInterval(bitWidth);
     
-#define DO_BINARY_OV(x) \
-    case llvm::Instruction::x: return a._##x(b, inst.hasNoUnsignedWrap(), inst.hasNoSignedWrap())._makeTopSpecial();
-#define DO_BINARY(x) \
-    case llvm::Instruction::x: return a._##x(b)._makeTopSpecial();
+#define DO_BINARY_OV(x)                                                 \
+    case llvm::Instruction::x:                                          \
+        if (a.isBottom() or b.isBottom()) return SimpleInterval {};     \
+        return a._##x(b, inst.hasNoUnsignedWrap(), inst.hasNoSignedWrap())._makeTopSpecial();
+#define DO_BINARY(x)                                                    \
+    case llvm::Instruction::x:                                          \
+        if (a.isBottom() or b.isBottom()) return SimpleInterval {};     \
+        return a._##x(b)._makeTopSpecial();
     
     switch (inst.getOpcode()) {
         DO_BINARY_OV(Add);
