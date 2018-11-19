@@ -92,17 +92,24 @@ llvm::CallInst *CallHierarchy::getLastCallInstruction() const {
 
 size_t CallHierarchy::callStringDepth() { return 1; }
 
+namespace {
+template <typename T> struct CompareByAddress {
+  T child;
+  template <typename Other> bool operator()(Other &&other) const {
+    // Compare by addresses
+    return &other == child;
+  }
+};
+} // namespace
+
 /// Returns the ordinal index of a llvm IR node which represents
 /// the index in its parent node such that node->getParent()->begin() + index
 /// represents the child node passed to this function.
 template <typename T> std::size_t indexOfChildInParent(T const *child) {
   auto const parent = child->getParent();
   assert(parent);
-  auto const pos =
-      std::find_if(parent->begin(), parent->end(), [&](auto &&element) {
-        // Compare by addresses
-        return &element == child;
-      });
+  auto const pos = std::find_if(parent->begin(), parent->end(),
+                                CompareByAddress<T const *>{child});
   assert(pos != parent->end());
 
   return std::distance(parent->begin(), pos);
