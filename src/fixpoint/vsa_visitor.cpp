@@ -439,7 +439,7 @@ void VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
   auto oldCallInstDomain = lastCallProgramPoints.findAbstractValueOrBottom(&lastCallInst);
   auto newCallInstDomain = oldCallInstDomain->leastUpperBound(*returnDomain);
 
-  STD_OUTPUT("Return domain: `" << *returnDomain);
+  STD_OUTPUT("Return domain: `" << *returnDomain << getCurrentCallHierarchy());
   STD_OUTPUT("New call instruction domain: `" << *newCallInstDomain);
 
   lastCallProgramPoints.put(lastCallInst, newCallInstDomain);

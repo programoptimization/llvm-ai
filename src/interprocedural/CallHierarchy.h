@@ -8,6 +8,7 @@
 namespace llvm {
 class Function;
 class CallInst;
+class raw_ostream;
 } // namespace llvm
 
 namespace pcpo {
@@ -49,6 +50,9 @@ public:
 
   static size_t callStringDepth();
 
+  /// Prints this call hierarchy to the given stream
+  void print(llvm::raw_ostream &os) const;
+
 private:
   CallInstructions::const_iterator callInstructionsBegin() const;
   CallInstructions::const_iterator callInstructionsEnd() const;
@@ -64,6 +68,10 @@ private:
   std::size_t offset;
 };
 } // namespace pcpo
+
+namespace llvm {
+raw_ostream &operator<<(raw_ostream &os, pcpo::CallHierarchy const &hierarchy);
+} // namespace llvm
 
 namespace std {
 template <> struct hash<pcpo::CallHierarchy> {

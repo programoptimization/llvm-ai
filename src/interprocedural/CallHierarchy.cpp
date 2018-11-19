@@ -2,8 +2,11 @@
 #include "CallHierarchy.h"
 #include "Hash.h"
 #include <algorithm>
+#include <cassert>
+#include <llvm/ADT/StringRef.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/Support/raw_ostream.h>
 
 namespace pcpo {
 bool CallHierarchy::isInMainFunction() const { return callInsts.empty(); }
@@ -16,8 +19,9 @@ CallHierarchy CallHierarchy::push(llvm::CallInst *callInst) const {
   auto newCallInsts = callInsts;
   newCallInsts.push_back(callInst);
 
-  auto newOffset = std::max(std::int64_t(0), std::int64_t(newCallInsts.size()) -
-                                                 std::int64_t(callStringDepth()));
+  auto newOffset =
+      std::max(std::int64_t(0), std::int64_t(newCallInsts.size()) -
+                                    std::int64_t(callStringDepth()));
 
   return CallHierarchy(mainFunction, std::move(newCallInsts), newOffset);
 }
@@ -86,11 +90,51 @@ llvm::CallInst *CallHierarchy::getLastCallInstruction() const {
   return callInsts.back();
 }
 
-size_t CallHierarchy::callStringDepth() {
-  return 1;
+size_t CallHierarchy::callStringDepth() { return 1; }
+
+/// Returns the ordinal index of a llvm IR node which represents
+/// the index in its parent node such that node->getParent()->begin() + index
+/// represents the child node passed to this function.
+template <typename T> std::size_t indexOfChildInParent(T const *child) {
+  auto const parent = child->getParent();
+  assert(parent);
+  auto const pos =
+      std::find_if(parent->begin(), parent->end(), [&](auto &&element) {
+        // Compare by addresses
+        return &element == child;
+      });
+  assert(pos != parent->end());
+
+  return std::distance(parent->begin(), pos);
 }
 
+void CallHierarchy::print(llvm::raw_ostream &os) const {
+  if (isInMainFunction()) {
+    os << mainFunction->getName();
+    return;
+  }
+
+  auto instructions = llvm::make_range(callInstructionsBegin(), //
+                                       callInstructionsEnd());
+  for (auto &&callSite : instructions) {
+    std::size_t indexBBInFunction = indexOfChildInParent(callSite->getParent());
+    std::size_t indexInstInBB = indexOfChildInParent(callSite);
+
+    llvm::StringRef const calledFunctionName =
+        callSite->getCalledFunction()->getName();
+
+    os << "/" << indexBBInFunction << ":" << indexInstInBB << "/"
+       << calledFunctionName;
+  }
+}
 } // namespace pcpo
+
+namespace llvm {
+raw_ostream &operator<<(raw_ostream &os, pcpo::CallHierarchy const &hierarchy) {
+  hierarchy.print(os);
+  return os;
+}
+} // namespace llvm
 
 size_t std::hash<pcpo::CallHierarchy>::
 operator()(pcpo::CallHierarchy const &hierarchy) const {
