@@ -78,7 +78,7 @@ void VsaVisitor::upsertNewState(BasicBlock *currentBB) {
     /// reality only defined for certain paths.
     /// All values actually defined are also defined after the first pass.
     /// Therefore remove all values that were not defined in the previous state
-    newState.prune(oldState->second);
+//    newState.prune(oldState->second);
 
     /// compute lub in place after this old state is updated
     if (!oldState->second.leastUpperBound(newState)) {
@@ -394,7 +394,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   if (CallHierarchy::callStringDepth() != 0) {
     // shift the call hierarchy window to the left
     auto lastCallHierarchy = getCurrentCallHierarchy().pop();
-    mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain, I);
+    mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain);
     worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
 
     pushSuccessors(I);
@@ -422,7 +422,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
     }
 
     auto callInst = llvm::cast<CallInst>(call);
-    mergeReturnDomains(*callInst, currentCallHierarchy, returnDomain, I);
+    mergeReturnDomains(*callInst, currentCallHierarchy, returnDomain);
 
     worklist.push({currentCallHierarchy, callerBB});
   }
@@ -432,8 +432,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
 
 void VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
                                     CallHierarchy &lastCallHierarchy,
-                                    std::shared_ptr<AbstractDomain> returnDomain,
-                                    ReturnInst &returnInst) {
+                                    std::shared_ptr<AbstractDomain> returnDomain) {
   auto &lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallInst.getParent()];
   auto oldCallInstDomain = lastCallProgramPoints.findAbstractValueOrBottom(&lastCallInst);
   auto newCallInstDomain = oldCallInstDomain->leastUpperBound(*returnDomain);
@@ -442,8 +441,6 @@ void VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
   STD_OUTPUT("New call instruction domain: `" << *newCallInstDomain);
 
   lastCallProgramPoints.put(lastCallInst, newCallInstDomain);
-  //TODO trying to explicitly put value for returned result
-  getCurrentProgramPoints()[returnInst.getParent()].put(returnInst, returnDomain);
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {

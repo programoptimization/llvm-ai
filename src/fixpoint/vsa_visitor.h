@@ -98,7 +98,7 @@ public:
   void visitInstruction(Instruction &I);
 
   void upsertNewState(BasicBlock *currentBB);
-  void mergeReturnDomains(CallInst &lastCallInst, CallHierarchy &lastCallHierarchy, std::shared_ptr<AbstractDomain> returnDomain, ReturnInst &returnInst);
+  void mergeReturnDomains(CallInst &lastCallInst, CallHierarchy &lastCallHierarchy, std::shared_ptr<AbstractDomain> returnDomain);
 
   void setCurrentCallHierarchy(CallHierarchy callHierarchy);
 
