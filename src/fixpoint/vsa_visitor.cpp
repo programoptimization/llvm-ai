@@ -14,7 +14,7 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
   /// and insert values s.t. arg -> T
   const auto numPreds = std::distance(pred_begin(&BB), pred_end(&BB));
   if (numPreds == 0) {
-    auto& oldState = getProgramPoints()[&BB];
+    auto& oldState = getCurrentProgramPoints()[&BB];
     /// mark state such that it cannot be bottom at any time
     oldState.markVisited();
 
@@ -22,7 +22,7 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
 
 //    for (auto &arg : BB.getParent()->args()) {
 //      if (arg.getType()->isIntegerTy()) {
-//        auto argumentDomain = getProgramPoints()[&BB].findAbstractValueOrNull(&arg);
+//        auto argumentDomain = getCurrentProgramPoints()[&BB].findAbstractValueOrNull(&arg);
 //
 //        if (argumentDomain != nullptr) {
 //          newState.put(arg, argumentDomain);
@@ -36,8 +36,8 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
   /// least upper bound with all predecessors
   for (const auto pred : predecessors(&BB)) {
     DEBUG_OUTPUT("visitBasicBlock: pred " << pred->getName() << " found");
-    const auto incoming = getProgramPoints().find(pred);
-    if (incoming != getProgramPoints().end()) {
+    const auto incoming = getCurrentProgramPoints().find(pred);
+    if (incoming != getCurrentProgramPoints().end()) {
       if (incoming->second.isBottom()) /// case 1: lub(x, bottom) = x
         continue;
       /// else state is not bottom
@@ -57,7 +57,7 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
   /// guaranteed to be in the state)
   if (numPreds > 1) {
     newState.prune(
-        getProgramPoints()
+        getCurrentProgramPoints()
         [getCurrentDominatorTree().getNode(&BB)->getIDom()->getBlock()]);
   }
 
@@ -68,8 +68,8 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
 }
 
 void VsaVisitor::upsertNewState(BasicBlock *currentBB) {
-  const auto oldState = getProgramPoints().find(currentBB);
-  if (oldState != getProgramPoints().end()) {
+  const auto oldState = getCurrentProgramPoints().find(currentBB);
+  if (oldState != getCurrentProgramPoints().end()) {
     DEBUG_OUTPUT("visitTerminationInst: old state found");
 
     assert(!oldState->second.isBottom() && "Pruning with bottom!");
@@ -90,7 +90,7 @@ void VsaVisitor::upsertNewState(BasicBlock *currentBB) {
     } /// else: state has changed
   } else {
     DEBUG_OUTPUT("visitTerminationInst: old state not found");
-    getProgramPoints()[currentBB] = newState;
+    getCurrentProgramPoints()[currentBB] = newState;
   }
 }
 
@@ -282,11 +282,11 @@ void VsaVisitor::visitPHINode(PHINode &I) {
     const auto incomingBlock = *blocks_iterator;
 
     /// block has not been visited yet -> implicit bottom -> continue
-    if (getProgramPoints().find(incomingBlock) == getProgramPoints().end())
+    if (getCurrentProgramPoints().find(incomingBlock) == getCurrentProgramPoints().end())
       continue;
 
     /// explicit bottom -> continue
-    if (getProgramPoints()[incomingBlock].isBottom())
+    if (getCurrentProgramPoints()[incomingBlock].isBottom())
       continue;
 
     /// Check if this is an instruction
@@ -295,7 +295,7 @@ void VsaVisitor::visitPHINode(PHINode &I) {
       /// from the basic block containing the instruction
 //      bcs.applyCondition(incomingBlock, I.getParent());
 
-      newValue = getProgramPoints()[incomingBlock].getAbstractValue(val);
+      newValue = getCurrentProgramPoints()[incomingBlock].getAbstractValue(val);
 
       /// reset the condition cache
 //      bcs.unApplyCondition(incomingBlock);
@@ -417,7 +417,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
     auto callerBB = call->getParent();
 
     // Prevents us from visiting not marked basic blocks.
-    if (getProgramPoints()[callerBB].isBottom()) {
+    if (getCurrentProgramPoints()[callerBB].isBottom()) {
       continue;
     }
 
@@ -594,13 +594,13 @@ void VsaVisitor::pushSuccessors(TerminatorInst &I) {
 }
 
 void VsaVisitor::print() const {
-  for (const auto &pp : getProgramPoints()) {
+  for (const auto &pp : getCurrentProgramPoints()) {
     STD_OUTPUT("VsaVisitor::print():" << pp.first->getName());
     pp.second.print();
   }
 }
 
-std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints() {
+std::map<BasicBlock *, State> &VsaVisitor::getCurrentProgramPoints() {
   return programPoints[currentCallHierarchy_];
 }
 
@@ -608,7 +608,7 @@ std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints(CallHierarchy &callH
   return programPoints[callHierarchy];
 }
 
-std::map<BasicBlock *, State> const &VsaVisitor::getProgramPoints() const {
+std::map<BasicBlock *, State> const &VsaVisitor::getCurrentProgramPoints() const {
   return programPoints[currentCallHierarchy_];
 }
 

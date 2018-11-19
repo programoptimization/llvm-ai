@@ -103,16 +103,16 @@ public:
   /// print state of all basic blocks
   void print() const;
 
-  /// return the program points
-  std::map<BasicBlock *, State> &getProgramPoints();
-  std::map<BasicBlock *, State> const& getProgramPoints() const;
-  std::map<BasicBlock *, State> &getProgramPoints(CallHierarchy& callHierarchy);
-
   void setCurrentCallHierarchy(CallHierarchy callHierarchy);
 
   void makeRunnable();
 
 private:
+  /// return the program points
+  std::map<BasicBlock *, State> &getCurrentProgramPoints();
+  std::map<BasicBlock *, State> const& getCurrentProgramPoints() const;
+  std::map<BasicBlock *, State> &getProgramPoints(CallHierarchy& callHierarchy);
+
   /// push directly reachable basic blocks onto worklist
   void pushSuccessors(TerminatorInst &I);
 
