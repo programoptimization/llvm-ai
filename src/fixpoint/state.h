@@ -33,7 +33,7 @@ public:
 
   shared_ptr<AbstractDomain> findAbstractValueOrNull(Value* v) const;
 
-    /// return if a global sate for this variable is available
+    /// return if a global state for this variable is available
   bool isAvailable(Value *v) const;
 
   /// create least upper bound (lub) in place
