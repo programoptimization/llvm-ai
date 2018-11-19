@@ -27,6 +27,17 @@
 #define DEBUG_OUTPUT(text)
 #endif
 
+#ifdef SHOW_STD_OUTPUT
 #define STD_OUTPUT(text) errs() << text << "\n"
+#else
+#define STD_OUTPUT(text) errs() << text << "\n"
+#endif
+
+#define SHOW_TEST_OUTPUT 1
+#ifdef SHOW_TEST_OUTPUT
+#define TEST_OUTPUT(text) errs() << text << "\n"
+#else
+#define TEST_OUTPUT(text)
+#endif
 
 #endif

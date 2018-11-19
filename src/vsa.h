@@ -60,9 +60,24 @@ public:
     }
 
     // todo: Use `mainReturnDomain` to create VsaResult object
-    auto& mainReturnDomain = vis.getMainReturnDomain();
+    auto &mainReturnDomain = vis.getMainReturnDomain();
 
-    llvm::errs() << "Main return domain: " << mainReturnDomain;
+    for (auto &&entry : programPoints) {
+      CallHierarchy const hierarchy = entry.first;
+      Function *currentFunction = hierarchy.getCurrentFunction();
+      auto *firstBlock = &currentFunction->front();
+
+      // The state is required to exist
+      auto state = entry.second.find(firstBlock);
+      assert(state != entry.second.end());
+
+      TEST_OUTPUT(hierarchy << " ");
+
+      for (auto &&arg : currentFunction->args()) {
+        auto domain = state->second.findAbstractValueOrBottom(&arg);
+        TEST_OUTPUT("  - " << arg.getArgNo() << ": " << *domain);
+      }
+    }
 
     return false;
   }
