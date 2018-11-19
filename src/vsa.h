@@ -11,6 +11,7 @@
 #include "llvm/Pass.h"
 
 #include <unordered_map>
+#include <set>
 
 using namespace llvm;
 using namespace pcpo;
@@ -59,25 +60,32 @@ public:
       numberOfItemsVisited++;
     }
 
+    std::set<CallHierarchy> orderedHierarchies;
     for (auto &&entry : programPoints) {
-      CallHierarchy const hierarchy = entry.first;
+      orderedHierarchies.insert(entry.first);
+    }
+
+    for (auto const &hierarchy : orderedHierarchies) {
       Function *currentFunction = hierarchy.getCurrentFunction();
       auto *firstBlock = &currentFunction->front();
 
+      auto entry = programPoints.find(hierarchy);
+      assert(entry != programPoints.end());
+
       // The state is required to exist
-      auto stateItr = entry.second.find(firstBlock);
-      assert(stateItr != entry.second.end());
+      auto const stateItr = entry->second.find(firstBlock);
+      assert(stateItr != entry->second.end());
 
       TEST_OUTPUT(hierarchy << " ");
 
       TEST_OUTPUT("  arguments:");
       for (auto &&arg : currentFunction->args()) {
-        auto domain = stateItr->second.findAbstractValueOrBottom(&arg);
+        auto const domain = stateItr->second.findAbstractValueOrBottom(&arg);
         TEST_OUTPUT("    - " << arg.getArgNo() << ": " << *domain);
       }
 
       if (currentFunction->getReturnType()->isIntegerTy()) {
-        auto returnDomain = joinReturnDomain(entry.second);
+        auto const returnDomain = joinReturnDomain(entry->second);
         TEST_OUTPUT("  returns:");
         TEST_OUTPUT("    - " << *returnDomain);
       }

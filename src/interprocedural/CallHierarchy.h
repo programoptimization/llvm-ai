@@ -50,6 +50,8 @@ public:
 
   static size_t callStringDepth();
 
+  /// Compares this call hierarchy to another lexicographically
+  bool operator<(CallHierarchy const &other) const;
   /// Prints this call hierarchy to the given stream
   void print(llvm::raw_ostream &os) const;
 

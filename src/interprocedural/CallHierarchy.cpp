@@ -3,6 +3,7 @@
 #include "Hash.h"
 #include <algorithm>
 #include <cassert>
+#include <llvm/ADT/SmallString.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
@@ -92,7 +93,22 @@ llvm::CallInst *CallHierarchy::getLastCallInstruction() const {
 
 size_t CallHierarchy::callStringDepth() { return 1; }
 
-namespace {
+bool CallHierarchy::operator<(CallHierarchy const &other) const {
+  llvm::SmallString<128> left;
+  {
+    llvm::raw_svector_ostream out(left);
+    print(out);
+  }
+  llvm::SmallString<128> right;
+  {
+    llvm::raw_svector_ostream out(right);
+    other.print(out);
+  }
+
+  assert((!(left < right) && !(right < left)) == (*this == other));
+  return left < right;
+}
+
 template <typename T> struct CompareByAddress {
   T child;
   template <typename Other> bool operator()(Other &&other) const {
@@ -100,7 +116,6 @@ template <typename T> struct CompareByAddress {
     return &other == child;
   }
 };
-} // namespace
 
 /// Returns the ordinal index of a llvm IR node which represents
 /// the index in its parent node such that node->getParent()->begin() + index
