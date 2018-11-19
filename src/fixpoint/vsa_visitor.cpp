@@ -351,7 +351,7 @@ void VsaVisitor::visitCallInst(CallInst &I) {
     auto argDomain = newState.getAbstractValue(functionArgValue);
     auto newDomain = oldParamDomain->leastUpperBound(*argDomain);
 
-    if (newDomain <= oldParamDomain) {
+    if (*newDomain <= *oldParamDomain) {
       continue;
     }
 
