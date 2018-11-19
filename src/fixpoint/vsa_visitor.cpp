@@ -590,8 +590,7 @@ void VsaVisitor::pushSuccessors(TerminatorInst &I) {
 //    if (!bcs.isBasicBlockReachable(I.getParent(), bb))
 //      continue; // do not put it on the worklist now
     DEBUG_OUTPUT("\t-" << bb->getName());
-    WorkList::Item item(getCurrentCallHierarchy(), bb);
-    worklist.push(item);
+    worklist.push({getCurrentCallHierarchy(), bb});
   }
 }
 
