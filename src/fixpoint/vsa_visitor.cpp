@@ -394,7 +394,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   if (CallHierarchy::callStringDepth() != 0) {
     // shift the call hierarchy window to the left
     auto lastCallHierarchy = getCurrentCallHierarchy().pop();
-    mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain);
+    mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain, I);
     worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
 
     pushSuccessors(I);
@@ -422,7 +422,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
     }
 
     auto callInst = llvm::cast<CallInst>(call);
-    mergeReturnDomains(*callInst, currentCallHierarchy, returnDomain);
+    mergeReturnDomains(*callInst, currentCallHierarchy, returnDomain, I);
 
     worklist.push({currentCallHierarchy, callerBB});
   }
@@ -432,7 +432,8 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
 
 void VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
                                     CallHierarchy &lastCallHierarchy,
-                                    std::shared_ptr<AbstractDomain> returnDomain) {
+                                    std::shared_ptr<AbstractDomain> returnDomain,
+                                    ReturnInst &returnInst) {
   auto &lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallInst.getParent()];
   auto oldCallInstDomain = lastCallProgramPoints.findAbstractValueOrBottom(&lastCallInst);
   auto newCallInstDomain = oldCallInstDomain->leastUpperBound(*returnDomain);
@@ -441,6 +442,8 @@ void VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
   STD_OUTPUT("New call instruction domain: `" << *newCallInstDomain);
 
   lastCallProgramPoints.put(lastCallInst, newCallInstDomain);
+  //TODO trying to explicitly put value for returned result
+  getCurrentProgramPoints()[returnInst.getParent()].put(returnInst, returnDomain);
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {
@@ -593,23 +596,12 @@ void VsaVisitor::pushSuccessors(TerminatorInst &I) {
   }
 }
 
-void VsaVisitor::print() const {
-  for (const auto &pp : getCurrentProgramPoints()) {
-    STD_OUTPUT("VsaVisitor::print():" << pp.first->getName());
-    pp.second.print();
-  }
-}
-
 std::map<BasicBlock *, State> &VsaVisitor::getCurrentProgramPoints() {
   return programPoints[currentCallHierarchy_];
 }
 
 std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints(CallHierarchy &callHierarchy) {
   return programPoints[callHierarchy];
-}
-
-std::map<BasicBlock *, State> const &VsaVisitor::getCurrentProgramPoints() const {
-  return programPoints[currentCallHierarchy_];
 }
 
 DominatorTree const &VsaVisitor::getCurrentDominatorTree() {

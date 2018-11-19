@@ -98,10 +98,7 @@ public:
   void visitInstruction(Instruction &I);
 
   void upsertNewState(BasicBlock *currentBB);
-  void mergeReturnDomains(CallInst &lastCallInst, CallHierarchy &lastCallHierarchy, std::shared_ptr<AbstractDomain> returnDomain);
-
-  /// print state of all basic blocks
-  void print() const;
+  void mergeReturnDomains(CallInst &lastCallInst, CallHierarchy &lastCallHierarchy, std::shared_ptr<AbstractDomain> returnDomain, ReturnInst &returnInst);
 
   void setCurrentCallHierarchy(CallHierarchy callHierarchy);
 
@@ -110,7 +107,6 @@ public:
 private:
   /// return the program points
   std::map<BasicBlock *, State> &getCurrentProgramPoints();
-  std::map<BasicBlock *, State> const& getCurrentProgramPoints() const;
   std::map<BasicBlock *, State> &getProgramPoints(CallHierarchy& callHierarchy);
 
   /// push directly reachable basic blocks onto worklist
