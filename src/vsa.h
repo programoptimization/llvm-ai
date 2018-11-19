@@ -68,14 +68,21 @@ public:
       auto *firstBlock = &currentFunction->front();
 
       // The state is required to exist
-      auto state = entry.second.find(firstBlock);
-      assert(state != entry.second.end());
+      auto stateItr = entry.second.find(firstBlock);
+      assert(stateItr != entry.second.end());
 
       TEST_OUTPUT(hierarchy << " ");
 
+      TEST_OUTPUT("  arguments:");
       for (auto &&arg : currentFunction->args()) {
-        auto domain = state->second.findAbstractValueOrBottom(&arg);
-        TEST_OUTPUT("  - " << arg.getArgNo() << ": " << *domain);
+        auto domain = stateItr->second.findAbstractValueOrBottom(&arg);
+        TEST_OUTPUT("    - " << arg.getArgNo() << ": " << *domain);
+      }
+
+      if (currentFunction->getReturnType()->isIntegerTy()) {
+        auto returnDomain = joinReturnDomain(entry.second);
+        TEST_OUTPUT("  returns:");
+        TEST_OUTPUT("    - " << *returnDomain);
       }
     }
 
