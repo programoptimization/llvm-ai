@@ -102,7 +102,6 @@ public:
   void upsertNewState(BasicBlock *currentBB);
   void mergeReturnDomains(CallInst &lastCallInst, CallHierarchy &lastCallHierarchy, std::shared_ptr<AbstractDomain> returnDomain);
 
-
   /// print state of all basic blocks
   void print() const;
 
@@ -111,17 +110,11 @@ public:
   std::map<BasicBlock *, State> const& getProgramPoints() const;
   std::map<BasicBlock *, State> &getProgramPoints(CallHierarchy& callHierarchy);
 
-  void setCurrentCallHierarchy(CallHierarchy callHierarchy) {
-    this->currentCallHierarchy_ = std::move(callHierarchy);
-  }
+  void setCurrentCallHierarchy(CallHierarchy callHierarchy);
 
-  AbstractDomain& getMainReturnDomain() const {
-    return *mainReturnDomain;
-  }
+  AbstractDomain& getMainReturnDomain() const;
 
-  void makeRunnable() {
-    shouldRun = true;
-  }
+  void makeRunnable();
 
 private:
   /// push directly reachable basic blocks onto worklist
@@ -131,19 +124,13 @@ private:
     std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>> &valuePair);
 
   /// Returns the current call hierarchy
-  pcpo::CallHierarchy &getCurrentCallHierarchy() {
-    return currentCallHierarchy_;
-  }
-
-  std::unordered_map<llvm::Function *, DominatorTree> dominatorTreeCache;
+  pcpo::CallHierarchy &getCurrentCallHierarchy();
 
   /// Returns the dominator tree for the current function we are inside
   DominatorTree const &getCurrentDominatorTree();
 
   /// Returns the function where are currently inside in
-  llvm::Function *getCurrentFunction() {
-    return getCurrentCallHierarchy().getCurrentFunction();
-  }
+  llvm::Function *getCurrentFunction();
 
   State newState;
   WorkList &worklist;
@@ -151,6 +138,7 @@ private:
   std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
   std::shared_ptr<AbstractDomain> mainReturnDomain;
   bool shouldRun;
+  std::unordered_map<llvm::Function *, DominatorTree> dominatorTreeCache;
 //  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
 };
 } // namespace pcpo

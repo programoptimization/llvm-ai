@@ -627,4 +627,24 @@ DominatorTree const &VsaVisitor::getCurrentDominatorTree() {
   return itr->second;
 }
 
+void VsaVisitor::setCurrentCallHierarchy(CallHierarchy callHierarchy) {
+  this->currentCallHierarchy_ = std::move(callHierarchy);
+}
+
+AbstractDomain &VsaVisitor::getMainReturnDomain() const {
+  return *mainReturnDomain;
+}
+
+void VsaVisitor::makeRunnable() {
+  shouldRun = true;
+}
+
+pcpo::CallHierarchy &VsaVisitor::getCurrentCallHierarchy() {
+  return currentCallHierarchy_;
+}
+
+llvm::Function *VsaVisitor::getCurrentFunction() {
+  return getCurrentCallHierarchy().getCurrentFunction();
+}
+
 } // namespace pcpo
