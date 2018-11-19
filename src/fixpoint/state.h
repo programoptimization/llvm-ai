@@ -28,7 +28,7 @@ public:
   /// get abstract domain of variable
   shared_ptr<AbstractDomain> getAbstractValue(Value *v) const;
 
-  /// find abstracd domain of a value, return bottom if there is none
+  /// find abstract domain of a value, return bottom if there is none
   shared_ptr<AbstractDomain> findAbstractValueOrBottom(Value* v) const;
 
   shared_ptr<AbstractDomain> findAbstractValueOrNull(Value* v) const;
