@@ -30,10 +30,16 @@ public:
     //     AbstractState().merge(state)
     AbstractStateDummy(AbstractStateDummy const& state) = default;
 
+    // Initialise the state to the incoming state of the function. This should do something like
+    // assuming the parameters can be anything.
+    explicit AbstractStateDummy(llvm::Function& f) {}
+    
     // Applies the changes needed to reflect executing the instructions in the basic block. Before
     // this operation is called, the state is the one upon entering bb, afterwards it should be (an
     // upper bound of) the state leaving the basic block.
-    void apply(llvm::BasicBlock& bb) {};
+    //  predecessors contains the outgoing state for all the predecessors, in the same order as they
+    // are listed in llvm::predecessors(bb).
+    void apply(llvm::BasicBlock& bb, std::vector<AbstractStateDummy> const& predecessors) {};
 
     // After this operation the state should contain an upper bound of both its previous value and
     // other. In other words, this computes (an upper bound of) the union of *this and other in
@@ -58,6 +64,11 @@ void executeFixpointAlgorithm(llvm::Module& M) {
         llvm::BasicBlock* bb;
         AbstractState state;
         bool update_scheduled = false; // Whether the node is already in the worklist
+
+        // If this is set, the algorithm will add the initial values from the parameters of the
+        // function to the incoming values, which is the correct thing to do for inital basic
+        // blocks.
+        llvm::Function* func_entry = nullptr; 
     };
 
     std::vector<Node> nodes;
@@ -68,10 +79,16 @@ void executeFixpointAlgorithm(llvm::Module& M) {
     dbgs(1) << "Initialising fixpoint algorithm, collecting basic blocks\n";
     
     for (llvm::Function& f: M.functions()) {
+        // Check for external (i.e. declared but not defined) functions
+        if (f.empty()) {
+            dbgs(1) << "  Function " << f.getName() << " is external, skipping...";
+            continue;
+        }
+        
         // Register basic blocks
         for (llvm::BasicBlock& bb: f) {
             dbgs(1) << "  Found basic block " << bb.getName() << '\n';
-            
+
             Node node;
             node.id = nodes.size(); // Assign new id
             node.bb = &bb;
@@ -85,46 +102,59 @@ void executeFixpointAlgorithm(llvm::Module& M) {
         int entry_id = nodeIdMap.at(&f.getEntryBlock());
         worklist.push_back(entry_id);
         nodes[entry_id].update_scheduled = true;
+        nodes[entry_id].func_entry = &f;
     }
     
     dbgs(1) << "\nWorklist initialised with " << worklist.size() << (worklist.size() != 1 ? " entries" : " entry")
-            << ". Starting fixpoint iteration...\n\n";
+            << ". Starting fixpoint iteration...\n";
 
     for (int iter = 0; !worklist.empty(); ++iter) {
         Node& node = nodes[worklist.back()];
         worklist.pop_back();
         node.update_scheduled = false;
 
-        dbgs(1) << "Iteration " << iter << ", considering basic block " << node.bb->getName() << '\n';
+        dbgs(1) << "\nIteration " << iter << ", considering basic block " << node.bb->getName() << '\n';
 
         AbstractState state_new; // Set to bottom
+
+        if (node.func_entry) {
+            dbgs(1) << "  Merging function parameters, is entry block\n";
+
+            AbstractState state_entry {*node.func_entry};
+            state_new.merge(state_entry);
+        }
         
         dbgs(1) << "  Merge of " << llvm::pred_size(node.bb)
                 << (llvm::pred_size(node.bb) != 1 ? " predecessors.\n" : " predecessor.\n");
 
         // Collect the predecessors
+        std::vector<AbstractState> predecessors;
         for (llvm::BasicBlock* bb: llvm::predecessors(node.bb)) {
             dbgs(3) << "    Merging basic block " << bb->getName() << '\n';
-            
+
             AbstractState state_branched {nodes[nodeIdMap[bb]].state};
             state_branched.branch(*bb, *node.bb);
             state_new.merge(state_branched);
+            predecessors.push_back(state_branched);
         }
 
-        dbgs(2) << "  Incoming state is:\n"; state_new.printIncoming(*node.bb, dbgs(2), 4);
+        dbgs(2) << "  Relevant incoming state is:\n"; state_new.printIncoming(*node.bb, dbgs(2), 4);
         
         // Apply the basic block
         dbgs(3) << "  Applying basic block\n";
-        state_new.apply(*node.bb);
+        state_new.apply(*node.bb, predecessors);
 
         // Merge the state back into the node
         dbgs(3) << "  Merging with stored state\n";
         bool changed = node.state.merge(state_new);
 
-        dbgs(2) << "  Outgoing state is:\n"; state_new.printOutgoing(*node.bb, dbgs(2), 2); dbgs(2) << '\n';
+        dbgs(2) << "  Outgoing state is:\n"; state_new.printOutgoing(*node.bb, dbgs(2), 2);
 
         // No changes, so no need to do anything else
         if (not changed) continue;
+
+        dbgs(2) << "  State changed, notifying " << llvm::succ_size(node.bb)
+                << (llvm::succ_size(node.bb) != 1 ? " successors\n" : " successor\n");
         
         // Something changed and we will need to update the successors
         for (llvm::BasicBlock* succ_bb: llvm::successors(node.bb)) {
@@ -132,12 +162,16 @@ void executeFixpointAlgorithm(llvm::Module& M) {
             if (not succ.update_scheduled) {
                 worklist.push_back(succ.id);
                 succ.update_scheduled = true;
+
+                dbgs(3) << "    Adding " << succ_bb->getName() << " to worklist\n";
             }
         }
     }
 
     // Output the final result
+    dbgs(0) << "\nFinal result:\n";
     for (Node const& i: nodes) {
+        dbgs(0) << i.bb->getName() << ":\n";
         i.state.printOutgoing(*i.bb, dbgs(0));
     }
 }

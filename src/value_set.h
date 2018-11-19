@@ -5,6 +5,7 @@
 
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constant.h"
+#include "llvm/IR/CFG.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instructions.h"
 
@@ -63,11 +64,24 @@ class AbstractStateValueSet {
 public:
     std::unordered_map<llvm::Value*, AbstractDomain> values;
 
+    // We need an additional boolean, as there is a difference between an empty AbstractState and
+    // one that is bottom.
+    bool isBottom = true;
+
 public:
     AbstractStateValueSet() = default;
     AbstractStateValueSet(AbstractStateValueSet const& state) = default;
-    
-    void apply(llvm::BasicBlock& bb) {
+
+    explicit AbstractStateValueSet(llvm::Function& f) {
+        // We need to initialise the arguments to T
+        for (llvm::Argument& arg: f.args()) {
+            values[&arg] = AbstractDomain {true};
+        }
+
+        isBottom = false;
+    }
+
+    void apply(llvm::BasicBlock& bb, std::vector<AbstractStateValueSet> const& pred_values) { 
         std::vector<AbstractDomain> operands;
 
         // Go through each instruction of the basic block and apply it to the state
@@ -75,19 +89,45 @@ public:
             // If the result of the instruction is not used, there is no reason to compute
             // it. (There are no side-effects in LLVM IR. (I hope.))
             if (inst.use_empty()) continue;
+
+            AbstractDomain inst_result;
             
-            for (llvm::Value* value: inst.operand_values()) {
-                operands.push_back(getAbstractValue(*value));
+            if (llvm::PHINode* phi = llvm::dyn_cast<llvm::PHINode>(&inst)) {
+                // Phi nodes are handled here, to get the precise values of the predecessors
+                
+                for (unsigned i = 0; i < phi->getNumIncomingValues(); ++i) {
+                    // Find the predecessor corresponding to the block of the phi node
+                    unsigned block = 0;
+                    for (llvm::BasicBlock* pred_bb: llvm::predecessors(&bb)) {
+                        if (pred_bb == phi->getIncomingBlock(i)) break;
+                        ++block;
+                    }
+
+                    // Merge its value
+                    AbstractDomain pred_value = pred_values[block].getAbstractValue(*phi->getIncomingValue(i));
+                    inst_result = AbstractDomain::upperBound(inst_result, pred_value);
+
+                    operands.push_back(pred_value); // Keep the debug output happy
+                }
+            } else {
+                for (llvm::Value* value: inst.operand_values()) {
+                    operands.push_back(getAbstractValue(*value));
+                }
+
+                // Compute the result of the operation
+                inst_result = AbstractDomain::interpret(inst, operands);
             }
-
-            assert(values.count(&inst) == 0 /* SSA should ensure that values are not overwritten */ );
-
-            // There is no need to merge here. In fact, the value does not even
-            // exist beforehand.
-            values[&inst] = AbstractDomain::interpret(inst, operands);
+            
+            values[&inst] = inst_result;
 
             dbgs(3).indent(2) << inst << " // " << values.at(&inst) << ", args ";
-            for (AbstractDomain const& i: operands) dbgs(3) << i << " ";
+            {int i = 0;
+            for (llvm::Value* value: inst.operand_values()) {
+                if (i) dbgs(3) << ", ";
+                if (value->getName().size()) dbgs(3) << '%' << value->getName() << " = ";
+                dbgs(3) << operands[i];
+                ++i;
+            }}
             dbgs(3) << '\n';
 
             operands.clear();
@@ -96,6 +136,13 @@ public:
     
     bool merge(AbstractStateValueSet const& other) {
         bool changed = false;
+
+        if (isBottom < other.isBottom) {
+            dbgs(3) << "    No longer bottom\n";
+            changed = true;
+            isBottom = false;
+        }
+        
         for (std::pair<llvm::Value*, AbstractDomain> i: other.values) {
             // If our value did not exist before, it will be implicitely initialised as bottom,
             // which works just fine.
@@ -154,6 +201,9 @@ public:
         llvm::Value& lhs = *cmp->getOperand(0);
         llvm::Value& rhs = *cmp->getOperand(1);
 
+        AbstractDomain lhs_new;
+        AbstractDomain rhs_new;
+        
         // Constrain the values if they exist.
         if (values.count(&lhs)) {
             dbgs(3) << "      Deriving constraint %" << lhs.getName() << ' ' << get_predicate_name(pred) << " %" << rhs.getName()
@@ -162,7 +212,7 @@ public:
             dbgs(3) << '\n';
 
             // For the lhs we say that 'lhs pred rhs' has to hold
-            values[&lhs] = AbstractDomain::refine_branch(pred, lhs, rhs, values[&lhs], getAbstractValue(rhs));
+            lhs_new = AbstractDomain::refine_branch(pred, lhs, rhs, values[&lhs], getAbstractValue(rhs));
         }
         if (values.count(&rhs)) {
             dbgs(3) << "      Deriving constraint %" << rhs.getName() << ' ' << get_predicate_name(pred_s) << " %" << lhs.getName()
@@ -171,9 +221,13 @@ public:
             dbgs(3) << '\n';
 
             // Here, we take the swapped predicate and assert 'rhs pred_s lhs'
-            values[&rhs] = AbstractDomain::refine_branch(pred_s, rhs, lhs, values[&rhs], getAbstractValue(lhs));
+            rhs_new = AbstractDomain::refine_branch(pred_s, rhs, lhs, values[&rhs], getAbstractValue(lhs));
         }
 
+        // The control flow is like this so that the previous ifs do not conflict with one another.
+        if (values.count(&lhs)) values[&lhs] = lhs_new;
+        if (values.count(&rhs)) values[&rhs] = rhs_new;
+        
         if (values.count(&lhs) && values.count(&rhs)) {
             dbgs(3) << "      Values restricted to %" << lhs.getName() << " = " << values[&lhs] << " and %"
                     << rhs.getName() << " = " << values[&rhs] << '\n';
@@ -225,7 +279,7 @@ public:
         } else if (values.count(&value)) {
             return values.at(&value);
         } else {
-            return AbstractDomain {true};
+            return AbstractDomain {false};
         }
     }
 
