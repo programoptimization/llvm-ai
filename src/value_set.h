@@ -8,6 +8,8 @@
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instructions.h"
 
+#include "global.h"
+
 namespace pcpo {
 
 class AbstractDomainDummy {
@@ -54,6 +56,8 @@ public:
         { return AbstractDomainDummy(true); }
 };
 
+char const* get_predicate_name(llvm::CmpInst::Predicate pred);
+
 template <typename AbstractDomain>
 class AbstractStateValueSet {
 public:
@@ -68,6 +72,10 @@ public:
 
         // Go through each instruction of the basic block and apply it to the state
         for (llvm::Instruction& inst: bb) {
+            // If the result of the instruction is not used, there is no reason to compute
+            // it. (There are no side-effects in LLVM IR. (I hope.))
+            if (inst.use_empty()) continue;
+            
             for (llvm::Value* value: inst.operand_values()) {
                 operands.push_back(getAbstractValue(*value));
             }
@@ -77,17 +85,32 @@ public:
             // There is no need to merge here. In fact, the value does not even
             // exist beforehand.
             values[&inst] = AbstractDomain::interpret(inst, operands);
+
+            dbgs(3).indent(2) << inst << " // " << values.at(&inst) << ", args ";
+            for (AbstractDomain const& i: operands) dbgs(3) << i << " ";
+            dbgs(3) << '\n';
+
+            operands.clear();
         }
     }
     
     bool merge(AbstractStateValueSet const& other) {
         bool changed = false;
         for (std::pair<llvm::Value*, AbstractDomain> i: other.values) {
-            // If our value did not exist before, it will be implicitely treated as bottom, which
-            // works just fine.
-            AbstractDomain old = values[i.first];
-            values[i.first] = AbstractDomain::upperBound(old, i.second);
-            changed = changed or old != values[i.first];
+            // If our value did not exist before, it will be implicitely initialised as bottom,
+            // which works just fine.
+            AbstractDomain v = AbstractDomain::upperBound(values[i.first], i.second);
+
+            // No change, nothing to do here
+            if (v == values[i.first]) continue;
+
+            if (i.first->getName().size())
+                dbgs(3) << "    %" << i.first->getName() << " set to " << v << ", merging "
+                        << values[i.first] << " and " << i.second << '\n';
+                
+            values[i.first] = v;
+            changed = true;
+
         }
         return changed;
     }
@@ -123,22 +146,71 @@ public:
         } else {
             assert(false /* we were not passed the right 'from' block? */);
         }
+        llvm::CmpInst::Predicate pred_s = llvm::CmpInst::getSwappedPredicate(pred);
+
+        dbgs(3) << "      Detected branch from " << from.getName() << " towards " << towards.getName()
+                << " using compare in %" << cmp->getName() << '\n';
         
         llvm::Value& lhs = *cmp->getOperand(0);
         llvm::Value& rhs = *cmp->getOperand(1);
 
+        // Constrain the values if they exist.
         if (values.count(&lhs)) {
+            dbgs(3) << "      Deriving constraint %" << lhs.getName() << ' ' << get_predicate_name(pred) << " %" << rhs.getName()
+                    << ", with %" << lhs.getName() << " = " << values[&lhs];
+            if (values.count(&rhs)) dbgs(3) << " and %" << rhs.getName() << " = " << values[&rhs];
+            dbgs(3) << '\n';
+
+            // For the lhs we say that 'lhs pred rhs' has to hold
             values[&lhs] = AbstractDomain::refine_branch(pred, lhs, rhs, values[&lhs], getAbstractValue(rhs));
         }
         if (values.count(&rhs)) {
-            llvm::CmpInst::Predicate pred_s = llvm::CmpInst::getSwappedPredicate(pred);
+            dbgs(3) << "      Deriving constraint %" << rhs.getName() << ' ' << get_predicate_name(pred_s) << " %" << lhs.getName()
+                    << ", with %" << rhs.getName() << " = " << values[&rhs];
+            if (values.count(&lhs)) dbgs(3) << " and %" << lhs.getName() << " = " << values[&lhs];
+            dbgs(3) << '\n';
+
+            // Here, we take the swapped predicate and assert 'rhs pred_s lhs'
             values[&rhs] = AbstractDomain::refine_branch(pred_s, rhs, lhs, values[&rhs], getAbstractValue(lhs));
+        }
+
+        if (values.count(&lhs) && values.count(&rhs)) {
+            dbgs(3) << "      Values restricted to %" << lhs.getName() << " = " << values[&lhs] << " and %"
+                    << rhs.getName() << " = " << values[&rhs] << '\n';
+        } else if (values.count(&lhs)) {
+            dbgs(3) << "      Value restricted to %" << lhs.getName() << " = " << values[&lhs]  << '\n';
+        } else if (values.count(&rhs)) {
+            dbgs(3) << "      Value restricted to %" << rhs.getName() << " = " << values[&rhs]  << '\n';
+        } else {
+            dbgs(3) << "      No restrictions were derived.\n";
         }
     }
 
-    void print(llvm::BasicBlock& bb, llvm::raw_ostream& out) const {
+    void printIncoming(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {
+        // @Speed: This is quadratic, could be linear
+        bool nothing = true;
+        for (std::pair<llvm::Value*, AbstractDomain> const& i: values) {
+            bool read    = false;
+            bool written = false;
+            for (llvm::Instruction& inst: bb) {
+                if (&inst == i.first) written = true;
+                for (llvm::Value* v: inst.operand_values()) {
+                    if (v == i.first) read = true;
+                }
+            }
+
+            if (read and not written) {
+                out.indent(indentation) << '%' << i.first->getName() << " = " << i.second << '\n';
+                nothing = false;
+            }
+        }
+        if (nothing) {
+            out.indent(indentation) << "<nothing>\n";
+        }
+    }
+    void printOutgoing(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {
         for (llvm::Instruction& inst: bb) {
-            out << inst;
+            out.indent(indentation) << inst;
             if (values.count(&inst)) {
                 out << " // " << values.at(&inst);
             }

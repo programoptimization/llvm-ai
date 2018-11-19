@@ -4,6 +4,8 @@
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/Instructions.h>
 
+#include "global.h"
+
 namespace pcpo {
 
 class SimpleInterval {

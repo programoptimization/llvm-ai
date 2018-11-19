@@ -77,8 +77,7 @@ SimpleInterval SimpleInterval::interpret(
     llvm::IntegerType* type = llvm::dyn_cast<llvm::IntegerType>(inst.getType());
     if (not type) return SimpleInterval {true};
     
-    unsigned bitWidth = type->getBitWidth();
-    assert(bitWidth == inst.getOperand(0)->getType()->getIntegerBitWidth());
+    unsigned bitWidth = inst.getOperand(0)->getType()->getIntegerBitWidth();
     assert(bitWidth == inst.getOperand(1)->getType()->getIntegerBitWidth());
 
     SimpleInterval a = operands[0];
