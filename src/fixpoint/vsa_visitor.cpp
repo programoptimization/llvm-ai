@@ -571,12 +571,12 @@ void VsaVisitor::pushSuccessors(TerminatorInst &I) {
   }
 }
 
-std::map<BasicBlock *, State> &VsaVisitor::getCurrentProgramPoints() {
-  return programPoints[currentCallHierarchy_];
+ProgramPoints &VsaVisitor::getCurrentProgramPoints() {
+  return programPointsByHierarchy[currentCallHierarchy_];
 }
 
-std::map<BasicBlock *, State> &VsaVisitor::getProgramPoints(CallHierarchy &callHierarchy) {
-  return programPoints[callHierarchy];
+ProgramPoints &VsaVisitor::getProgramPoints(CallHierarchy &callHierarchy) {
+  return programPointsByHierarchy[callHierarchy];
 }
 
 DominatorTree const &VsaVisitor::getCurrentDominatorTree() {

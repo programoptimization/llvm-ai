@@ -24,7 +24,7 @@ struct VsaPass : public ModulePass {
 
   WorkList worklist;
 
-  std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> programPointsByHierarchy;
+  ProgramPointsByCallHierarchy programPointsByHierarchy;
 
 public:
   explicit VsaPass() : ModulePass(ID), worklist(), programPointsByHierarchy() {}

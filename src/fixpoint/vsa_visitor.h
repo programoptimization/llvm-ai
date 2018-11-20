@@ -1,18 +1,17 @@
 #ifndef PROJECT_VISITOR_H
 #define PROJECT_VISITOR_H
 
+#include "../abstract_domain/AbstractDomain.h"
+#include "../interprocedural/CallHierarchy.h"
+#include "../util/util.h"
+#include "branch_conditions.h"
+#include "state.h"
+#include "worklist.h"
 #include <llvm/IR/CFG.h>
 #include <llvm/IR/Dominators.h>
 #include <llvm/IR/InstVisitor.h>
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Operator.h>
-#include <unordered_map>
-#include "../abstract_domain/AbstractDomain.h"
-#include "../util/util.h"
-#include "../interprocedural/CallHierarchy.h"
-#include "branch_conditions.h"
-#include "state.h"
-#include "worklist.h"
 #include <map>
 #include <unordered_map>
 
@@ -20,12 +19,18 @@ using namespace llvm;
 
 namespace pcpo {
 
+using ProgramPoints = std::map<BasicBlock *, State>;
+using ProgramPointsByCallHierarchy =
+    std::unordered_map<CallHierarchy, ProgramPoints>;
+
 class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 
 public:
-  VsaVisitor(WorkList &q, CallHierarchy callHierarchy, std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>>& programPoints)
-      : worklist(q), currentCallHierarchy_(std::move(callHierarchy)), programPoints(programPoints), shouldSkipInstructions(false) /*, bcs(programPoints)*/{
-  };
+  VsaVisitor(WorkList &q, CallHierarchy callHierarchy,
+             ProgramPointsByCallHierarchy &programPointsByCallHierarchy)
+      : worklist(q), currentCallHierarchy_(std::move(callHierarchy)),
+        programPointsByHierarchy(programPointsByCallHierarchy),
+        shouldSkipInstructions(false){};
 
   /// create lub of states of preceeding basic blocks and use it as newState;
   /// the visitor automatically visits all instructions of this basic block
@@ -104,21 +109,25 @@ public:
 
 private:
   /// return the program points
-  std::map<BasicBlock *, State> &getCurrentProgramPoints();
-  std::map<BasicBlock *, State> &getProgramPoints(CallHierarchy& callHierarchy);
+  ProgramPoints &getCurrentProgramPoints();
+  ProgramPoints &getProgramPoints(CallHierarchy &callHierarchy);
 
   /// puts current newState into global program points or
   /// merges it with the old one.
   void upsertNewState(BasicBlock *currentBB);
 
   /// merges return domain with call-site domain
-  void mergeReturnDomains(CallInst &lastCallInst, CallHierarchy &lastCallHierarchy, std::shared_ptr<AbstractDomain> returnDomain);
+  void mergeReturnDomains(CallInst &lastCallInst,
+                          CallHierarchy &lastCallHierarchy,
+                          std::shared_ptr<AbstractDomain> returnDomain);
 
   /// push directly reachable basic blocks onto worklist
   void pushSuccessors(TerminatorInst &I);
 
-  void putBothBranchConditions(BranchInst& I, Value* op,
-    std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>> &valuePair);
+  void putBothBranchConditions(
+      BranchInst &I, Value *op,
+      std::pair<shared_ptr<AbstractDomain>, shared_ptr<AbstractDomain>>
+          &valuePair);
 
   /// Returns the current call hierarchy
   pcpo::CallHierarchy &getCurrentCallHierarchy();
@@ -132,10 +141,10 @@ private:
   State newState;
   WorkList &worklist;
   pcpo::CallHierarchy currentCallHierarchy_;
-  std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
+  ProgramPointsByCallHierarchy &programPointsByHierarchy;
   bool shouldSkipInstructions;
   std::unordered_map<llvm::Function *, DominatorTree> dominatorTreeCache;
-//  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
+  //  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
 };
 } // namespace pcpo
 
