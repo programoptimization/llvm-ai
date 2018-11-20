@@ -364,14 +364,9 @@ void VsaVisitor::visitCallInst(CallInst &I) {
 
   if (paramDomainChanged || !visitedCalleeAlready) {
     worklist.push({calleeCallHierarchy, &calleeBB});
+    shouldRun = false;
   }
 
-  if (!visitedCalleeAlready) {
-    shouldRun = false;
-    //TODO think whether this call is required here
-//    upsertNewState(currentBB);
-    return;
-  }
 }
 
 void VsaVisitor::visitReturnInst(ReturnInst &I) {
@@ -382,20 +377,16 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   // updates global program points with the new state
   upsertNewState(I.getParent());
 
-  auto &currentCallHierarchy = getCurrentCallHierarchy();
-  auto lastCallInstruction = currentCallHierarchy.getLastCallInstruction();
-
-  // When the return is in a main, there is no last call.
-  if (lastCallInstruction == nullptr) {
-    pushSuccessors(I);
-    return;
-  }
-
   if (CallHierarchy::callStringDepth() != 0) {
-    // shift the call hierarchy window to the left
-    auto lastCallHierarchy = getCurrentCallHierarchy().pop();
-    mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain);
-    worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
+    auto &currentCallHierarchy = getCurrentCallHierarchy();
+    auto lastCallInstruction = currentCallHierarchy.getLastCallInstruction();
+
+    if (lastCallInstruction != nullptr) {
+      // shift the call hierarchy window to the left
+      auto lastCallHierarchy = getCurrentCallHierarchy().pop();
+      mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain);
+      worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
+    }
 
     pushSuccessors(I);
     return;
@@ -426,7 +417,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
     auto callInst = llvm::cast<CallInst>(call);
     mergeReturnDomains(*callInst, callerHierarchy, returnDomain);
 
-    worklist.push({currentCallHierarchy, callerBB});
+    worklist.push({callerHierarchy, callerBB});
   }
 
   pushSuccessors(I);
