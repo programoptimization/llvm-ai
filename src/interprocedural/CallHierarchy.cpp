@@ -1,6 +1,7 @@
 
 #include "CallHierarchy.h"
 #include "Hash.h"
+#include "llvm/Support/CommandLine.h"
 #include <algorithm>
 #include <cassert>
 #include <llvm/ADT/SmallString.h>
@@ -8,6 +9,8 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/Support/raw_ostream.h>
+
+extern llvm::cl::opt<unsigned> CallStringDepth;
 
 namespace pcpo {
 
@@ -98,7 +101,7 @@ llvm::CallInst *CallHierarchy::getLastCallInstruction() const {
   return callInsts.back();
 }
 
-size_t CallHierarchy::callStringDepth() { return 0; }
+size_t CallHierarchy::callStringDepth() { return CallStringDepth; }
 
 bool CallHierarchy::operator<(CallHierarchy const &other) const {
   llvm::SmallString<128> left;

@@ -8,7 +8,6 @@
 #include "interprocedural/ReturnDomainJoin.h"
 
 #include "llvm/IR/Function.h"
-#include "llvm/Support/CommandLine.h"
 #include "llvm/Pass.h"
 
 #include <unordered_map>
@@ -16,8 +15,6 @@
 
 using namespace llvm;
 using namespace pcpo;
-
-extern cl::opt<unsigned> CallStringDepth;
 
 namespace {
 struct VsaPass : public ModulePass {
@@ -44,8 +41,6 @@ public:
       return false;
     }
 
-    // todo: use CallStringDepth here
-    // unsigned x = CallStringDepth;
     CallHierarchy initCallHierarchy{mainFunction};
 
     worklist.push(WorkList::Item(initCallHierarchy, &mainFunction->front()));
