@@ -33,11 +33,17 @@ else
     echo "Unknown OS check run.sh:21"
 fi
 
-PASS=csapass
+PASS=vsapass
 
-# if one argument passed: only analyze the passed program
+# if one argument passed:
 if [[ $# == 1 ]] ; then
-    ARRAY=($1)
+    if [[ $1 == *.c ]] ; then
+        # if it ends with .c find files ending with that name
+        ARRAY=($(ls -d *$1))
+    else
+        # otherwise find all .c files whose names contain given substring
+        ARRAY=($(ls -d *$1*.c))
+    fi
 else # run all
     ARRAY=($(ls -d *.c))
 fi
@@ -75,7 +81,7 @@ printf "\nTEST SUMMARY:\n"
 for f in ${ARRAY[*]};
 do
     # Find out to which file we are comparing the file
-    if [ -e vectors/$f.txt ]
+    if [[ -e vectors/$f.txt ]]
     then
         echo "Comparing against vector file vectors/$f.txt:"
         VECTOR_FILE="vectors/$f.txt"
@@ -85,7 +91,7 @@ do
     fi
 
     # Perform the actual comparison
-    if cmp build/$f.out $VECTOR_FILE; then
+    if cmp build/$f.out ${VECTOR_FILE}; then
         # ... success
         printf "Run: ${GREEN}$f${NC}\n"
     else

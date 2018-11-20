@@ -1,6 +1,7 @@
 
 #include "CallHierarchy.h"
 #include "Hash.h"
+#include "llvm/Support/CommandLine.h"
 #include <algorithm>
 #include <cassert>
 #include <llvm/ADT/SmallString.h>
@@ -9,10 +10,12 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/Support/raw_ostream.h>
 
+// This is a command-line argument for the pass.
+// It is defined in vsa.cpp
+// If the argument is not provided it defaults to 0.
+extern llvm::cl::opt<unsigned> CallStringDepth;
+
 namespace pcpo {
-static bool isMainFunction(llvm::Function *function) {
-  return function->getName() == "main";
-}
 
 CallHierarchy::CallHierarchy(llvm::Function *currentFunction,
                              CallInstructions callInsts, std::size_t offset)
@@ -101,7 +104,7 @@ llvm::CallInst *CallHierarchy::getLastCallInstruction() const {
   return callInsts.back();
 }
 
-size_t CallHierarchy::callStringDepth() { return 0; }
+size_t CallHierarchy::callStringDepth() { return CallStringDepth; }
 
 bool CallHierarchy::operator<(CallHierarchy const &other) const {
   llvm::SmallString<128> left;
@@ -141,25 +144,20 @@ template <typename T> std::size_t indexOfChildInParent(T const *child) {
 }
 
 void CallHierarchy::print(llvm::raw_ostream &os) const {
-  // Call string zero or main function:
-  if (isMainFunction(getCurrentFunction()) ||
-      (callInstructionsBegin() == callInstructionsEnd())) {
-    os << getCurrentFunction()->getName();
-    return;
-  }
-
   auto instructions = llvm::make_range(callInstructionsBegin(), //
                                        callInstructionsEnd());
   for (auto &&callSite : instructions) {
     std::size_t indexBBInFunction = indexOfChildInParent(callSite->getParent());
     std::size_t indexInstInBB = indexOfChildInParent(callSite);
 
-    llvm::StringRef const calledFunctionName =
-        callSite->getCalledFunction()->getName();
+    llvm::StringRef const callerFunctionName =
+        callSite->getFunction()->getName();
 
-    os << "/" << indexBBInFunction << ":" << indexInstInBB << "/"
-       << calledFunctionName;
+    os << callerFunctionName << "/" << indexBBInFunction << ":"
+       << indexInstInBB << "/";
   }
+
+  os << getCurrentFunction()->getName();
 }
 } // namespace pcpo
 
