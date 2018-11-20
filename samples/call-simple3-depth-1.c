@@ -1,3 +1,4 @@
+// OPT: "--cs_depth=1"
 int foo() {
   return 1001;
 }

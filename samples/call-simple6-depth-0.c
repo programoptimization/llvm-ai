@@ -1,3 +1,4 @@
+// OPT: "--cs_depth=0"
 int baz() {
   return 5;
 }

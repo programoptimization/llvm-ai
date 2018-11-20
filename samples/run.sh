@@ -73,12 +73,21 @@ do
     ${VSA_LLVM_PATH}/bin/opt -mem2reg < build/$f.bc > build/$f-opt.bc
     # ... disassemble optimized file
     ${VSA_LLVM_PATH}/bin/llvm-dis build/$f-opt.bc
+
+    # Extract the run parameters from the C file which are inclosed
+    # in the first line by '// OPT: "????"'.
+    PARAM=($(head -n 1 $f | grep "// OPT:" | sed -e 's/\/\/ OPT: "\(.*\)\"/\1/'))
+    if [[ ! -z "$PARAM" ]];
+      then
+        echo "Passing additional parameters to opt: \"$PARAM\""
+    fi
+
     # ... run VSA
     if [[ "$OSTYPE" == "msys" ]]; then
       # On windows we are expecting the opt tool to contain our pass
-      ${VSA_LLVM_PATH}/bin/opt -${PASS} < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
+      ${VSA_LLVM_PATH}/bin/opt -${PASS} $PARAM < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
     else
-      ${VSA_LLVM_PATH}/bin/opt -load ${VSA_LLVM_PATH}/lib/${EXE} -${PASS} < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
+      ${VSA_LLVM_PATH}/bin/opt -load ${VSA_LLVM_PATH}/lib/${EXE} -${PASS} $PARAM < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
     fi
     cp -n build/$f.out build/$f.ref
 done

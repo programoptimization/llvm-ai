@@ -1,3 +1,4 @@
+// OPT: "--cs_depth=1"
 int baz(int i, int j) {
   return (i - 2) * (j + 4);
 }

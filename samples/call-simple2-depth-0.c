@@ -1,3 +1,4 @@
+// OPT: "--cs_depth=0"
 int bar() {
   return 100;
 }
