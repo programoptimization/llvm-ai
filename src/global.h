@@ -15,8 +15,8 @@ extern int debug_level;
 // This is the initial setting
 #define DEBUG_LEVEL 4
 
-// This returns either a stream to stderr or to nowhere, depending on whether we
-// are currently outputting that level.
+// This returns either a stream to stderr or to nowhere, depending on whether we are currently
+// outputting that level.
 inline llvm::raw_ostream& dbgs(int level) {
     if (level <= DEBUG_LEVEL) {
         return llvm::errs();
@@ -27,8 +27,14 @@ inline llvm::raw_ostream& dbgs(int level) {
 
 namespace Merge_op {
 
+// see the documentation of AbstractStateDummy::merge for an explanation of what these mean
+// precisely.
 enum Type: int {
     UPPER_BOUND, WIDEN, NARROW
+};
+
+constexpr char const* name[] = {
+    "joining", "widening", "narrowing"
 };
 
 }
