@@ -416,13 +416,15 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
 
     auto callerBB = call->getParent();
 
+    CallHierarchy callerHierarchy{callerBB->getParent()};
+
     // Prevents us from visiting not marked basic blocks.
-    if (getCurrentProgramPoints()[callerBB].isBottom()) {
+    if (getProgramPoints(callerHierarchy)[callerBB].isBottom()) {
       continue;
     }
 
     auto callInst = llvm::cast<CallInst>(call);
-    mergeReturnDomains(*callInst, currentCallHierarchy, returnDomain);
+    mergeReturnDomains(*callInst, callerHierarchy, returnDomain);
 
     worklist.push({currentCallHierarchy, callerBB});
   }
