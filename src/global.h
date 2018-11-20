@@ -15,6 +15,10 @@ extern int debug_level;
 // This is the initial setting
 #define DEBUG_LEVEL 4
 
+// When do we start to widen?
+#define WIDENING_AFTER 2
+#define MAX_WARROWING_ITERATIONS 40
+
 // This returns either a stream to stderr or to nowhere, depending on whether we
 // are currently outputting that level.
 inline llvm::raw_ostream& dbgs(int level) {

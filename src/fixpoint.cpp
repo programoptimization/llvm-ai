@@ -5,6 +5,9 @@
 
 #include "llvm/IR/CFG.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/Dominators.h"
+#include <llvm/Analysis/LoopInfo.h>
+
 
 #include "global.h"
 #include "value_set.h"
@@ -33,7 +36,7 @@ public:
     // Initialise the state to the incoming state of the function. This should do something like
     // assuming the parameters can be anything.
     explicit AbstractStateDummy(llvm::Function& f) {}
-    
+
     // Applies the changes needed to reflect executing the instructions in the basic block. Before
     // this operation is called, the state is the one upon entering bb, afterwards it should be (an
     // upper bound of) the state leaving the basic block.
@@ -63,28 +66,49 @@ void executeFixpointAlgorithm(llvm::Module& M) {
         int id;
         llvm::BasicBlock* bb;
         AbstractState state;
+        bool looping = false;
         bool update_scheduled = false; // Whether the node is already in the worklist
 
         // If this is set, the algorithm will add the initial values from the parameters of the
         // function to the incoming values, which is the correct thing to do for inital basic
         // blocks.
-        llvm::Function* func_entry = nullptr; 
+        llvm::Function* func_entry = nullptr;
     };
 
     std::vector<Node> nodes;
     std::unordered_map<llvm::BasicBlock*, int> nodeIdMap; // Maps basic blocks to the ids of their corresponding nodes
     std::vector<int> worklist; // Contains the ids of nodes that need to be processed
+    std::vector<llvm::BasicBlock*> basicBlocksInLoops; // Contains BasicBlocks that are part of loops
 
     // TODO: Check what this does for release clang, probably write out a warning
     dbgs(1) << "Initialising fixpoint algorithm, collecting basic blocks\n";
-    
+
     for (llvm::Function& f: M.functions()) {
         // Check for external (i.e. declared but not defined) functions
         if (f.empty()) {
             dbgs(1) << "  Function " << f.getName() << " is external, skipping...";
             continue;
         }
-        
+
+
+        // Get the DominatorTree of the current function
+        llvm::DominatorTree dominatorTree = llvm::DominatorTree();
+        dominatorTree.recalculate(f);
+
+        // Use the LoopInfoBase to gather information about loops in the function
+        llvm::LoopInfoBase<llvm::BasicBlock, llvm::Loop>* loopInfoBase = new llvm::LoopInfoBase<llvm::BasicBlock, llvm::Loop>();
+        loopInfoBase->releaseMemory();
+        loopInfoBase->analyze(dominatorTree);
+
+        // Iterate over loops to find BasicBlocks that are part of them
+        llvm::SmallVector<llvm::Loop *, 4> loops;
+        loops = loopInfoBase->getLoopsInPreorder();
+
+        // Save basic blocks for later
+        for (size_t i = 0; i < loops.size(); ++i) {
+            basicBlocksInLoops.push_back(loops[i]->getLoopLatch());
+        }
+
         // Register basic blocks
         for (llvm::BasicBlock& bb: f) {
             dbgs(1) << "  Found basic block " << bb.getName() << '\n';
@@ -93,7 +117,12 @@ void executeFixpointAlgorithm(llvm::Module& M) {
             node.id = nodes.size(); // Assign new id
             node.bb = &bb;
             // node.state is default initialised (to bottom)
-            
+
+            if (std::find(basicBlocksInLoops.begin(), basicBlocksInLoops.end(), &bb) != basicBlocksInLoops.end()){
+                dbgs(3) << "  Found basic block in Loop" << bb.getName() << '\n';
+                node.looping = true;
+            }
+
             nodeIdMap[node.bb] = node.id;
             nodes.push_back(node);
         }
@@ -104,7 +133,7 @@ void executeFixpointAlgorithm(llvm::Module& M) {
         nodes[entry_id].update_scheduled = true;
         nodes[entry_id].func_entry = &f;
     }
-    
+
     dbgs(1) << "\nWorklist initialised with " << worklist.size() << (worklist.size() != 1 ? " entries" : " entry")
             << ". Starting fixpoint iteration...\n";
 
@@ -123,7 +152,7 @@ void executeFixpointAlgorithm(llvm::Module& M) {
             AbstractState state_entry {*node.func_entry};
             state_new.merge(state_entry);
         }
-        
+
         dbgs(1) << "  Merge of " << llvm::pred_size(node.bb)
                 << (llvm::pred_size(node.bb) != 1 ? " predecessors.\n" : " predecessor.\n");
 
@@ -139,13 +168,15 @@ void executeFixpointAlgorithm(llvm::Module& M) {
         }
 
         dbgs(2) << "  Relevant incoming state is:\n"; state_new.printIncoming(*node.bb, dbgs(2), 4);
-        
+
         // Apply the basic block
         dbgs(3) << "  Applying basic block\n";
         state_new.apply(*node.bb, predecessors);
 
         // Merge the state back into the node
         dbgs(3) << "  Merging with stored state\n";
+
+        //TODO: introduce widening/narrowing/warrowing
         bool changed = node.state.merge(state_new);
 
         dbgs(2) << "  Outgoing state is:\n"; state_new.printOutgoing(*node.bb, dbgs(2), 2);
@@ -155,7 +186,7 @@ void executeFixpointAlgorithm(llvm::Module& M) {
 
         dbgs(2) << "  State changed, notifying " << llvm::succ_size(node.bb)
                 << (llvm::succ_size(node.bb) != 1 ? " successors\n" : " successor\n");
-        
+
         // Something changed and we will need to update the successors
         for (llvm::BasicBlock* succ_bb: llvm::successors(node.bb)) {
             Node& succ = nodes[nodeIdMap[succ_bb]];
@@ -179,11 +210,12 @@ void executeFixpointAlgorithm(llvm::Module& M) {
 
 bool AbstractInterpretationPass::runOnModule(llvm::Module& M) {
     using AbstractState = AbstractStateValueSet<SimpleInterval>;
-    
+
     executeFixpointAlgorithm<AbstractState>(M);
-    
+
     // We never change anything
     return false;
 }
 
 } /* end of namespace pcpo */
+
