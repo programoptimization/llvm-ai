@@ -4,84 +4,63 @@
 # Please specify the path to llvm and clang in the environment variables
 # VSA_CLANG_PATH and VSA_LLVM_PATH.
 
-while :; do
-    case $1 in
-        -t) flag1="TEST"            
-        ;;
-        *) break
-    esac
-    shift
-done
+cd $(dirname "$0")
 
-if [ "$flag1" = "TEST" ]; then
-    if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        EXE=llvm-vsa-tutorial.so
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        EXE=llvm-vsa-tutorial.dylib
-    elif [[ "$OSTYPE" == "win32" ]]; then
-        EXE=llvm-vsa-tutorial.dll
-    else
-        echo "Unknown OS check run.sh:21"
-    fi
-    PASS=vsatutorialpass
-else
-	if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        EXE=llvm-vsa.so
-	elif [[ "$OSTYPE" == "darwin"* ]]; then
-        EXE=llvm-vsa.dylib
-	elif [[ "$OSTYPE" == "win32" ]]; then
-        EXE=llvm-vsa.dylib.dll
-	else
-        echo "Unknown OS check run.sh:21"
-	fi
-    PASS=vsapass
+if [ -z "$VSA_LLVM_PATH" ]; then
+    echo 'No VSA_LLVM_PATH environment variable specified. Please do something like'
+    echo '    export VSA_LLVM_PATH=/home/philipp/uni/pollvm/build_llvm'
+    echo 'or whatever your IDE wants you to do if you use one.'
+    exit 1
 fi
 
-# if one argument passed: only analyze the passed program
+if [ -z "$VSA_CLANG_PATH" ]; then
+    VSA_CLANG_PATH="$VSA_LLVM_PATH"
+    echo 'Info: Initialising clang path to the same as VSA_LLVM_PATH'
+fi
+
+if [ ! -x "$VSA_LLVM_PATH/bin/opt" ]; then
+    echo "Error: "'"'"$VSA_LLVM_PATH/bin/opt"'"'"does not exist."
+    exit 2
+fi
+if [ ! -x "$VSA_CLANG_PATH/bin/clang" ]; then
+    echo "Error: "'"'"$VSA_CLANG_PATH/bin/clang"'"'"does not exist."
+    exit 2
+fi
+
+PASS_LIB="$VSA_LLVM_PATH/lib/llvm-pain.so"
+PASS=painpass
+
+if [ ! -x "$PASS_LIB" ]; then
+    echo "Error: Could not find "'"'"$PASS_LIB"'"'", have you tried building the program?"
+    exit 3
+fi
+
+# If an argument was passed we analyse only that file
 if [ $# == 1 ] ; then
     ARRAY=($1) 
-else # run all
+else
     ARRAY=($(ls -d *.c))
 fi
 
-# color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m' # No Color
-
-# if no folder is existent
 mkdir -p build
-
 # for all c-files...
 for f in ${ARRAY[*]};
 do
-    # ... print file name
-    echo "##"
-    echo $(pwd)/$f
-    # ... clean up for old run
-    rm -f build/$f.out
-    rm -f build/$f.bc
-    rm -f build/$f-opt.bc
-    # ... compile
+    echo "Processing $(pwd)/$f ..."
+    rm -f build/$f.out build/$f.bc build/$f-opt.bc
+    # Compile to bitcode
     $VSA_CLANG_PATH/bin/clang -O0 -emit-llvm $f -Xclang -disable-O0-optnone -c -o build/$f.bc
-    # ... run mem2reg optimization
-    $VSA_LLVM_PATH/bin/opt -mem2reg < build/$f.bc > build/$f-opt.bc
-    # ... disassemble optimized file
+    # Run a preliminary pass to transform memory accesses into registers
+    $VSA_LLVM_PATH/bin/opt -mem2reg build/$f.bc -o build/$f-opt.bc
+    # Write the human readable version
     $VSA_LLVM_PATH/bin/llvm-dis build/$f-opt.bc
-    # ... run VSA
-    $VSA_LLVM_PATH/bin/opt -load $VSA_LLVM_PATH/lib/$EXE -$PASS < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
-    cp -n build/$f.out build/$f.ref
-done
-
-printf "\nTEST SUMMARY:\n"
-for f in ${ARRAY[*]};
-do
-    if cmp build/$f.out build/$f.ref; then
-        # ... success
-        printf "Run: ${GREEN}$f${NC}\n"
-    else
-        # ... failure
-        printf "Run: ${RED}$f${NC}\n"
+    # Run our own pass on that
+    $VSA_LLVM_PATH/bin/opt -load "$PASS_LIB" -$PASS -S -o /dev/null build/$f-opt.bc > build/$f.out 2>&1
+    if [ $? -ne 0 ]; then
+        echo "Error while executing opt:"
+        cat build/$f.out
+        exit 4
     fi
+    # Note: Some IDEs cannot handle redirects well, so just remove everything starting at '>' when
+    # you copy-paste the above command into it.
 done
-printf "\n"

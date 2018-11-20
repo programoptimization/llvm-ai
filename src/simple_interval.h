@@ -29,7 +29,7 @@ public:
         llvm::CmpInst::Predicate pred, llvm::Value& lhs, llvm::Value& rhs,
         SimpleInterval a, SimpleInterval b
     );
-    static SimpleInterval upperBound(SimpleInterval a, SimpleInterval b);
+    static SimpleInterval merge(Merge_op::Type op, SimpleInterval a, SimpleInterval b);
 
     // Other functions
 
@@ -44,11 +44,13 @@ public:
     bool isBottom() const { return state == BOTTOM; };
     
     bool contains(APInt value) const;
-    SimpleInterval widen(SimpleInterval o) const;
 
     void printOut() const;
 
-    // These are internal functions that, generally speaking, do not deal with BOTTOM and TOP
+    // These are internal functions that, generally speaking, do not deal with bottom and top. Also,
+    // they use the interval representation of top (i.e. [a+1, a] for some a). If you call one of
+    // these, you have to take care to deal with those values beforehand, and convert the result
+    // into normal form by calling _makeTopSpecial.
     
     SimpleInterval _makeTopInterval(unsigned bitWidth) const;
     SimpleInterval _makeTopSpecial() const;
@@ -59,6 +61,7 @@ public:
     SimpleInterval _URem(SimpleInterval o) const;
     SimpleInterval _SRem(SimpleInterval o) const;
     SimpleInterval _upperBound(SimpleInterval o) const;
+    SimpleInterval _widen(SimpleInterval o) const;
     SimpleInterval _narrow(SimpleInterval o) const;
 
     static SimpleInterval _refine_branch(

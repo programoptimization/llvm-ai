@@ -53,7 +53,7 @@ public:
     ) { return a; }
 
     // @Cleanup Documentation
-    static AbstractDomainDummy upperBound(AbstractDomainDummy a, AbstractDomainDummy b)
+    static AbstractDomainDummy merge(Merge_op::Type op, AbstractDomainDummy a, AbstractDomainDummy b)
         { return AbstractDomainDummy(true); }
 };
 
@@ -77,6 +77,7 @@ public:
         for (llvm::Argument& arg: f.args()) {
             values[&arg] = AbstractDomain {true};
         }
+        // All other values are uninitialised, so set them to 
 
         isBottom = false;
     }
@@ -134,7 +135,7 @@ public:
         }
     }
     
-    bool merge(AbstractStateValueSet const& other) {
+    bool merge(Merge_op::Type op, AbstractStateValueSet const& other) {
         bool changed = false;
 
         if (isBottom < other.isBottom) {
@@ -144,9 +145,9 @@ public:
         }
         
         for (std::pair<llvm::Value*, AbstractDomain> i: other.values) {
-            // If our value did not exist before, it will be implicitely initialised as bottom,
+            // If our value did not exist before, it will be implicitly initialised as bottom,
             // which works just fine.
-            AbstractDomain v = AbstractDomain::upperBound(values[i.first], i.second);
+            AbstractDomain v = AbstractDomain::merge(op, values[i.first], i.second);
 
             // No change, nothing to do here
             if (v == values[i.first]) continue;
@@ -265,12 +266,11 @@ public:
         }
     }
     void printOutgoing(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {
-        for (llvm::Instruction& inst: bb) {
-            out.indent(indentation) << inst;
-            if (values.count(&inst)) {
-                out << " // " << values.at(&inst);
-            }
-            out << '\n';
+        for (auto const& i: values) {
+            out.indent(indentation) << '%' << i.first->getName() << " = " << i.second << '\n';
+        }
+        if (values.size() == 0) {
+            out.indent(indentation) << "<nothing>\n";
         }
     };
     
