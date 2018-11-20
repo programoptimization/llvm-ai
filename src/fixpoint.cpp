@@ -223,7 +223,6 @@ void executeFixpointAlgorithmWidening(llvm::Module& M) {
             continue;
         }
 
-
         // Get the DominatorTree of the current function
         llvm::DominatorTree dominatorTree = llvm::DominatorTree();
         dominatorTree.recalculate(f);
@@ -324,15 +323,13 @@ void executeFixpointAlgorithmWidening(llvm::Module& M) {
         // Merge the state back into the node
         dbgs(3) << "  Merging with stored state\n";
 
-        //TODO: introduce widening/narrowing/warrowing
         bool changed;
-        int op = 0;
-
+        int op = AbstractStateDummy::INVALID;
         if (node.should_widen and node.change_count > widen_after and not narrowing_enabled) {
-            op = 2;
+            op = AbstractStateDummy::WIDEN; // widen
         } else if (node.should_widen and node.change_count > widen_after and narrowing_enabled) {
-            op = 3;
-        } else op = 1;
+            op = AbstractStateDummy::NARROW; // narrow
+        } else op = AbstractStateDummy::SMALL_UPPER_BOUND; // normal merge
 
         // calls widening/narrowing as needed
         changed = node.state.merge(state_new, op);
@@ -365,7 +362,6 @@ void executeFixpointAlgorithmWidening(llvm::Module& M) {
         i.state.printOutgoing(*i.bb, dbgs(0));
     }
 }
-
 
 bool AbstractInterpretationPass::runOnModule(llvm::Module& M) {
     using AbstractState = AbstractStateValueSet<SimpleInterval>;
