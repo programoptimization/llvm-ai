@@ -39,6 +39,9 @@ CallHierarchy CallHierarchy::push(llvm::CallInst *callInst) const {
 }
 
 CallHierarchy CallHierarchy::pop(std::size_t frame_count) const {
+  assert((callStringDepth() > 0U) &&
+         "CallHierarchy::pop is only allowed to be called in a non "
+         "zero call string depth scenario!");
   assert(frame_count <= size());
 
   auto end = callInsts.end();
