@@ -10,9 +10,6 @@
 #include <llvm/Support/raw_ostream.h>
 
 namespace pcpo {
-static bool isMainFunction(llvm::Function *function) {
-  return function->getName() == "main";
-}
 
 CallHierarchy::CallHierarchy(llvm::Function *currentFunction,
                              CallInstructions callInsts, std::size_t offset)
@@ -141,25 +138,20 @@ template <typename T> std::size_t indexOfChildInParent(T const *child) {
 }
 
 void CallHierarchy::print(llvm::raw_ostream &os) const {
-  // Call string zero or main function:
-  if (isMainFunction(getCurrentFunction()) ||
-      (callInstructionsBegin() == callInstructionsEnd())) {
-    os << getCurrentFunction()->getName();
-    return;
-  }
-
   auto instructions = llvm::make_range(callInstructionsBegin(), //
                                        callInstructionsEnd());
   for (auto &&callSite : instructions) {
     std::size_t indexBBInFunction = indexOfChildInParent(callSite->getParent());
     std::size_t indexInstInBB = indexOfChildInParent(callSite);
 
-    llvm::StringRef const calledFunctionName =
-        callSite->getCalledFunction()->getName();
+    llvm::StringRef const callerFunctionName =
+        callSite->getFunction()->getName();
 
-    os << "/" << indexBBInFunction << ":" << indexInstInBB << "/"
-       << calledFunctionName;
+    os << callerFunctionName << "/" << indexBBInFunction << ":"
+       << indexInstInBB << "/";
   }
+
+  os << getCurrentFunction()->getName();
 }
 } // namespace pcpo
 
