@@ -51,9 +51,9 @@ public:
     while (!worklist.empty()) {
       auto item = worklist.pop();
 
+      vis.setShouldSkipInstructions(false);
       vis.setCurrentCallHierarchy(item.hierarchy);
       vis.visit(*item.block);
-      vis.makeRunnable();
 
       numberOfItemsVisited++;
     }

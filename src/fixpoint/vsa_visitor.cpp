@@ -89,7 +89,7 @@ void VsaVisitor::upsertNewState(BasicBlock *currentBB) {
 /// If any additional logic is added to this function,
 /// consider also updating those specialised versions.
 void VsaVisitor::visitTerminatorInst(TerminatorInst &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   DEBUG_OUTPUT("visitTerminationInst: entered");
 
@@ -105,7 +105,7 @@ void VsaVisitor::visitTerminatorInst(TerminatorInst &I) {
 }
 
 void VsaVisitor::visitBranchInst(BranchInst &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   const auto cond = I.getOperand(0);
 
@@ -168,7 +168,7 @@ void VsaVisitor::putBothBranchConditions(
 }
 
 void VsaVisitor::visitSwitchInst(SwitchInst &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   const auto cond = I.getCondition();
 
@@ -232,7 +232,7 @@ void VsaVisitor::visitSwitchInst(SwitchInst &I) {
 }
 
 void VsaVisitor::visitLoadInst(LoadInst &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   // Crash fix: The LoadInst can load a pointer too so that getIntegerBitWidth
   //            crashes if assertions are enabled. Mainly encountered on
@@ -245,7 +245,7 @@ void VsaVisitor::visitLoadInst(LoadInst &I) {
 }
 
 void VsaVisitor::visitPHINode(PHINode &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   /// bottom as initial value
   auto bs = AD_TYPE::create_bottom(I.getType()->getIntegerBitWidth());
@@ -307,7 +307,7 @@ void VsaVisitor::visitPHINode(PHINode &I) {
 }
 
 void VsaVisitor::visitCallInst(CallInst &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto currentCallHierarchy = getCurrentCallHierarchy();
   auto calleeCallHierarchy = currentCallHierarchy.push(&I);
@@ -351,13 +351,13 @@ void VsaVisitor::visitCallInst(CallInst &I) {
 
   if (paramDomainChanged || !visitedCalleeAlready) {
     worklist.push({calleeCallHierarchy, &calleeBB});
-    shouldRun = false;
+    setShouldSkipInstructions(true);
   }
 
 }
 
 void VsaVisitor::visitReturnInst(ReturnInst &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto returnDomain = newState.findAbstractValueOrBottom(I.getReturnValue());
 
@@ -422,7 +422,7 @@ void VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -432,7 +432,7 @@ void VsaVisitor::visitAdd(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitSub(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -442,7 +442,7 @@ void VsaVisitor::visitSub(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitMul(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -452,7 +452,7 @@ void VsaVisitor::visitMul(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitURem(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -461,7 +461,7 @@ void VsaVisitor::visitURem(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitSRem(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -470,7 +470,7 @@ void VsaVisitor::visitSRem(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitUDiv(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -479,7 +479,7 @@ void VsaVisitor::visitUDiv(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitSDiv(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -488,7 +488,7 @@ void VsaVisitor::visitSDiv(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitAnd(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -497,7 +497,7 @@ void VsaVisitor::visitAnd(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitOr(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -506,7 +506,7 @@ void VsaVisitor::visitOr(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitXor(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -515,7 +515,7 @@ void VsaVisitor::visitXor(BinaryOperator &I) {
 }
 
 void VsaVisitor::visitShl(Instruction &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -525,7 +525,7 @@ void VsaVisitor::visitShl(Instruction &I) {
 }
 
 void VsaVisitor::visitLShr(Instruction &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -534,7 +534,7 @@ void VsaVisitor::visitLShr(Instruction &I) {
 }
 
 void VsaVisitor::visitAShr(Instruction &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   auto ad0 = newState.getAbstractValue(I.getOperand(0));
   auto ad1 = newState.getAbstractValue(I.getOperand(1));
@@ -543,20 +543,20 @@ void VsaVisitor::visitAShr(Instruction &I) {
 }
 
 void VsaVisitor::visitBinaryOperator(BinaryOperator &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   STD_OUTPUT("visited binary instruction");
 }
 
 void VsaVisitor::visitUnaryInstruction(UnaryInstruction &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   /// interesting ones here would be the ext/trunc instructions, i.e.
   /// sext, zext, trunc
 }
 
 void VsaVisitor::visitInstruction(Instruction &I) {
-  if (!shouldRun) { return; }
+  if (shouldSkipInstructions) { return; }
 
   DEBUG_OUTPUT("visitInstruction: " << I.getOpcodeName());
 }
@@ -597,8 +597,8 @@ void VsaVisitor::setCurrentCallHierarchy(CallHierarchy callHierarchy) {
   this->currentCallHierarchy_ = std::move(callHierarchy);
 }
 
-void VsaVisitor::makeRunnable() {
-  shouldRun = true;
+void VsaVisitor::setShouldSkipInstructions(bool shouldSkipInstructions) {
+  this->shouldSkipInstructions = shouldSkipInstructions;
 }
 
 pcpo::CallHierarchy &VsaVisitor::getCurrentCallHierarchy() {

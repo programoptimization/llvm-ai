@@ -24,7 +24,7 @@ class VsaVisitor : public InstVisitor<VsaVisitor, void> {
 
 public:
   VsaVisitor(WorkList &q, CallHierarchy callHierarchy, std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>>& programPoints)
-      : worklist(q), currentCallHierarchy_(std::move(callHierarchy)), programPoints(programPoints), shouldRun(true) /*, bcs(programPoints)*/{
+      : worklist(q), currentCallHierarchy_(std::move(callHierarchy)), programPoints(programPoints), shouldSkipInstructions(false) /*, bcs(programPoints)*/{
   };
 
   /// create lub of states of preceeding basic blocks and use it as newState;
@@ -99,7 +99,8 @@ public:
 
   void setCurrentCallHierarchy(CallHierarchy callHierarchy);
 
-  void makeRunnable();
+  /// if set to true any instruction visit will be skipped
+  void setShouldSkipInstructions(bool shouldSkipInstructions);
 
 private:
   /// return the program points
@@ -132,7 +133,7 @@ private:
   WorkList &worklist;
   pcpo::CallHierarchy currentCallHierarchy_;
   std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> &programPoints;
-  bool shouldRun;
+  bool shouldSkipInstructions;
   std::unordered_map<llvm::Function *, DominatorTree> dominatorTreeCache;
 //  /*std::map<CallString,*/ BranchConditions /*>*/ bcs;
 };
