@@ -25,4 +25,12 @@ inline llvm::raw_ostream& dbgs(int level) {
     }
 }
 
+namespace Merge_op {
+
+enum Type: int {
+    UPPER_BOUND, WIDEN, NARROW
+};
+
+}
+
 } /* end of namespace pcpo */

@@ -9,16 +9,19 @@ SimpleInterval::SimpleInterval(llvm::Constant& constant) {
         end = c->getValue();
         return;
     }
-    if (llvm::UndefValue* c = llvm::dyn_cast<llvm::UndefValue>(&constant)) {
-        if (llvm::IntegerType* ty = llvm::dyn_cast<llvm::IntegerType>(c->getType())) {
-            state = NORMAL;
-            begin = APInt::getNullValue(ty->getBitWidth());
-            end = begin;
-        }
-        
-    } else {
-        state = TOP;
-    }
+    // Depending on how you want to handle undef values, you might want to consider them as any
+    // value (e.g. 0).
+    //     if (llvm::UndefValue* c = llvm::dyn_cast<llvm::UndefValue>(&constant)) {
+    //         if (llvm::IntegerType* ty = llvm::dyn_cast<llvm::IntegerType>(c->getType())) {
+    //             state = NORMAL;
+    //             begin = APInt::getNullValue(ty->getBitWidth());
+    //             end = begin;
+    //         }
+    //         state = TOP;
+    //         return;
+    //     }
+
+    state = TOP;
 }
 
 SimpleInterval::SimpleInterval(APInt _begin, APInt _end) {
@@ -38,6 +41,25 @@ static APInt ap_smin(APInt a, APInt b) {
 }
 static APInt ap_umin(APInt a, APInt b) {
     return a.ult(b) ? a : b;
+}
+
+static SimpleInterval _icmp_ne(SimpleInterval a, SimpleInterval b) {
+    // Basically, we can only do something if b is a single value that lies at of of the ends of a
+    if (b.begin != b.end) return a;
+    
+    if (a.begin == a.end + 1) {
+        // a is top, so just exclude the one value
+        return SimpleInterval {b.begin + 1, b.begin - 1};
+    } else if (a.begin == b.begin and a.begin == a.end) {
+        // Single value, we want bottom
+        return SimpleInterval {};
+    } else if (a.begin == b.begin) {
+        return SimpleInterval {a.begin + 1, a.end};
+    } else if (a.end == b.begin) {
+        return SimpleInterval {a.begin, a.end - 1};
+    } else {
+        return a;
+    }
 }
 
 static SimpleInterval _icmp_ule_val(SimpleInterval a, APInt v) {
@@ -79,7 +101,7 @@ static SimpleInterval _icmp_shift(SimpleInterval a) {
 
 SimpleInterval SimpleInterval::interpret(
     llvm::Instruction& inst, std::vector<SimpleInterval> const& operands
-) {
+) {    
     if (operands.size() != 2) return SimpleInterval {true};
 
     // We only deal with integer types
@@ -91,17 +113,40 @@ SimpleInterval SimpleInterval::interpret(
 
     SimpleInterval a = operands[0];
     SimpleInterval b = operands[1];
+
+    // Handle integer compare instructions. This is not really useful, as it just determines whether
+    // the comparison can be true or false. The actual branching logic in the value set does a more
+    // careful analysis of which conditions lead to a basic block, deriving upper and lower bounds
+    // on the variables involved. However, always getting top for the results annoyed me. (In
+    // theory, someone could also do computations with them.
+    if (llvm::ICmpInst* icmp = llvm::dyn_cast<llvm::ICmpInst>(&inst)) {
+        bool never_true  = refine_branch(icmp->getPredicate(),        *this, o).isBottom();
+        bool never_false = refine_branch(icmp->getInversePredicate(), *this, o).isBottom();
+        if (never_true and never_false) {
+            return SimpleInterval {};
+        } else if (never_true) {
+            return SimpleInterval {APInt::getNullValue(1), APInt::getNullValue(1)};
+        } else if (never_false) {
+            return SimpleInterval {APInt::getMaxValue(1), APInt::getMaxValue(1)};
+        } else {
+            return SimpleInterval {true};
+        }
+    }
     
-    // The following functions do not really want to deal with TOP. (Keep in mind that we do not
-    // need to always returns TOP, e.g. when doing division.) So instead we pass the full interval.
+    // The following functions do not really want to deal with top. (Keep in mind that we do not
+    // need to always returns top, e.g. when doing division.) So instead we pass the full interval.
     a = a._makeTopInterval(bitWidth);
     b = b._makeTopInterval(bitWidth);
-    
+
 #define DO_BINARY_OV(x)                                                 \
     case llvm::Instruction::x:                                          \
         if (a.isBottom() or b.isBottom()) return SimpleInterval {};     \
         return a._##x(b, inst.hasNoUnsignedWrap(), inst.hasNoSignedWrap())._makeTopSpecial();
 #define DO_BINARY(x)                                                    \
+    case llvm::Instruction::x:                                          \
+        if (a.isBottom() or b.isBottom()) return SimpleInterval {};     \
+        return a._##x(b)._makeTopSpecial();
+#define DO_COMPARE(x)
     case llvm::Instruction::x:                                          \
         if (a.isBottom() or b.isBottom()) return SimpleInterval {};     \
         return a._##x(b)._makeTopSpecial();
@@ -113,6 +158,8 @@ SimpleInterval SimpleInterval::interpret(
         DO_BINARY(UDiv);
         DO_BINARY(URem);
         DO_BINARY(SRem);
+    case llvm::Instruction::ICmp:
+        return 
     default:
         return SimpleInterval {true};
     }
@@ -149,7 +196,7 @@ SimpleInterval SimpleInterval::_refine_branch(
     
     switch (pred) {
     case Predicate::ICMP_EQ: return a1._narrow(a2);
-    case Predicate::ICMP_NE: return a1._upperBound(a2);
+    case Predicate::ICMP_NE: return _icmp_ne(a1, a2);
     case Predicate::ICMP_ULE: return _icmp_ule_val(a1, a2._umax());
     case Predicate::ICMP_ULT: return _icmp_ult_val(a1, a2._umax());
 
@@ -168,12 +215,23 @@ SimpleInterval SimpleInterval::_refine_branch(
     }
 }
 
-SimpleInterval SimpleInterval::upperBound(SimpleInterval a, SimpleInterval b) {
+SimpleInterval SimpleInterval::merge(Merge_op::Type op, SimpleInterval a, SimpleInterval b) {
     if (a.isBottom()) return b;
     if (b.isBottom()) return a;
-    if (a.isTop() || b.isTop()) return SimpleInterval(true);
-    return a._upperBound(b)._makeTopSpecial();
+    if (a.isTop() || b.isTop()) return SimpleInterval {true};
+
+    // Note that T is handled above, so no need to convert the inputs
+    
+    switch (op) {
+    case Merge_op::UPPER_BOUND: return a._upperBound(b)._makeTopSpecial();
+    case Merge_op::WIDEN:       return a._widen     (b)._makeTopSpecial();
+    case Merge_op::NARROW:      return a._narrow    (b)._makeTopSpecial();
+    default:
+        assert(false /* invalid op value */);
+        return SimpleInterval {true};
+    }
 }
+
 
 bool SimpleInterval::operator==(SimpleInterval o) const {
     return state == NORMAL
@@ -195,8 +253,8 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& os, SimpleInterval a) {
     } else if(a.isTop()) {
         os << "T";
     } else {
-        os << "[" << a.begin.toString(10, false) << ", "
-           << a.end.toString(10, false) << "]";
+        os << "[" << a.begin.toString(10, true) << ", "
+           << a.end.toString(10, true) << "]";
     }
     return os;
 }
@@ -207,8 +265,8 @@ void SimpleInterval::printOut() const {
     } else if(state == TOP) {
         llvm::errs() << "T";
     } else {
-        llvm::errs() << "[" << begin.toString(10, false) << ", "
-           << end.toString(10, false) << "]";
+        llvm::errs() << "[" << begin.toString(10, true) << ", "
+           << end.toString(10, true) << "]";
     }
     llvm::errs() << '\n';
 }
@@ -363,7 +421,6 @@ SimpleInterval SimpleInterval::_URem (SimpleInterval o) const {
     }
 }
 
-
 SimpleInterval SimpleInterval::_SRem (SimpleInterval o) const {
     SimpleInterval r {begin, end};
 
@@ -420,6 +477,23 @@ SimpleInterval SimpleInterval::_upperBound(SimpleInterval o) const {
     }
 }
 
+SimpleInterval SimpleInterval::_widen(SimpleInterval o) const {
+    APInt incr = end - begin;;
+    if (incr.uge(APInt::getSignedMaxValue(begin.getBitWidth()))) {
+        // Too large already, return true
+        return SimpleInterval(true);
+    } 
+
+    // Widen the sides that changed
+    SimpleInterval r = _upperBound(o);
+    int flags = (r.begin != begin) | (r.end != end) << 1;
+    incr.ashrInPlace(flags == 3 ? 1 : 0); // Divide by two if we widen into both directions
+    incr += incr.isNullValue(); // Always widen by at least 1
+    if (flags & 1) r.begin -= incr;
+    if (flags & 2) r.end   += incr;
+    return r;
+}
+
 SimpleInterval SimpleInterval::_narrow(SimpleInterval o) const {
     int overflag = contains(o.begin) << 1 | contains(o.end);
     if (overflag == 0) {
@@ -453,31 +527,10 @@ SimpleInterval SimpleInterval::_narrow(SimpleInterval o) const {
 bool SimpleInterval::operator<=(SimpleInterval o) const {
     if (state != NORMAL or o.state != NORMAL) {
         return state <= o.state;
-    } 
+    }
   
     return o._innerLe(begin, end) && o._innerLe(end, o.end);
 }
-
-SimpleInterval SimpleInterval::widen(SimpleInterval o) const {
-    if (  state != NORMAL) return   state == BOTTOM ? o : *this;
-    if (o.state != NORMAL) return o.state == BOTTOM ? *this : o;
-
-    APInt incr = end - begin;;
-    if (incr.uge(APInt::getSignedMaxValue(begin.getBitWidth()))) {
-        // Too large already, return true
-        return SimpleInterval(true);
-    } 
-
-    // Widen the sides that changed
-    SimpleInterval r = _upperBound(o);
-    int flags = (r.begin != begin) | (r.end != end) << 1;
-    incr.ashrInPlace(flags == 3 ? 1 : 0);
-    incr += incr.isNullValue(); // Always widen by at least 1
-    if (flags & 1) r.begin -= incr;
-    if (flags & 2) r.end   += incr;
-    return r;
-}
-
 
 APInt SimpleInterval::_umax() const {
     return begin.ugt(end) ? APInt::getMaxValue(begin.getBitWidth()) : end;

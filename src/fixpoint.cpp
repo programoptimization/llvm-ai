@@ -45,7 +45,7 @@ public:
     // other. In other words, this computes (an upper bound of) the union of *this and other in
     // place. (I would have called it union, if that were possible.) Returns whether the state
     // changed as a result.
-    bool merge(AbstractStateDummy const& other) { return false; };
+    bool merge(Merge_op::Type op, AbstractStateDummy const& other) { return false; };
 
     // Restrict the set of values to the one that allows 'from' to branch towards
     // 'towards'. Starting with the state when exiting from, this should compute (an upper bound of)
@@ -59,6 +59,8 @@ public:
 
 template <typename AbstractState>
 void executeFixpointAlgorithm(llvm::Module& M) {
+    constexpr int iterations_max = 1000;
+    
     struct Node {
         int id;
         llvm::BasicBlock* bb;
@@ -108,7 +110,7 @@ void executeFixpointAlgorithm(llvm::Module& M) {
     dbgs(1) << "\nWorklist initialised with " << worklist.size() << (worklist.size() != 1 ? " entries" : " entry")
             << ". Starting fixpoint iteration...\n";
 
-    for (int iter = 0; !worklist.empty(); ++iter) {
+    for (int iter = 0; !worklist.empty() and iter < iterations_max; ++iter) {
         Node& node = nodes[worklist.back()];
         worklist.pop_back();
         node.update_scheduled = false;
@@ -146,9 +148,9 @@ void executeFixpointAlgorithm(llvm::Module& M) {
 
         // Merge the state back into the node
         dbgs(3) << "  Merging with stored state\n";
-        bool changed = node.state.merge(state_new);
+        bool changed = node.state.merge(Merge_op::UPPER_BOUND, state_new);
 
-        dbgs(2) << "  Outgoing state is:\n"; state_new.printOutgoing(*node.bb, dbgs(2), 2);
+        dbgs(2) << "  Outgoing state is:\n"; state_new.printOutgoing(*node.bb, dbgs(2), 4);
 
         // No changes, so no need to do anything else
         if (not changed) continue;
@@ -168,11 +170,15 @@ void executeFixpointAlgorithm(llvm::Module& M) {
         }
     }
 
+    if (!worklist.empty()) {
+        dbgs(0) << "Iteration terminated due to exceeding loop count.\n";
+    }
+    
     // Output the final result
     dbgs(0) << "\nFinal result:\n";
     for (Node const& i: nodes) {
         dbgs(0) << i.bb->getName() << ":\n";
-        i.state.printOutgoing(*i.bb, dbgs(0));
+        i.state.printOutgoing(*i.bb, dbgs(0), 2);
     }
 }
 
