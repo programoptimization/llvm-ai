@@ -309,33 +309,35 @@ void VsaVisitor::visitPHINode(PHINode &I) {
 void VsaVisitor::visitCallInst(CallInst &I) {
   if (shouldSkipInstructions) { return; }
 
-  auto currentCallHierarchy = getCurrentCallHierarchy();
-  auto calleeCallHierarchy = currentCallHierarchy.push(&I);
-
+  auto calleeCallHierarchy = getCurrentCallHierarchy().push(&I);
+  auto &calleeBB = I.getCalledFunction()->front();
   auto &calleeProgramPoints = getProgramPoints(calleeCallHierarchy);
-  auto callResult = calleeProgramPoints.find(&(I.getCalledFunction()->front()));
-  const bool visitedCalleeAlready = (callResult != calleeProgramPoints.end());
+  
+  // get callee state or create new bottom state
+  auto &calleeState = calleeProgramPoints[&calleeBB]; 
+  const bool visitedCalleeAlready = !calleeState.isBottom();
 
-  auto calledFunction = I.getCalledFunction();
+  const bool paramDomainChanged = mergeParamDomains(I, calleeState);
 
-  auto &calleeBB = calledFunction->front();
-  auto &calleeState = calleeProgramPoints[&calleeBB];
+  if (paramDomainChanged || !visitedCalleeAlready) {
+    worklist.push({calleeCallHierarchy, &calleeBB});
+    setShouldSkipInstructions(true);
+  }
+}
 
-  // propagate the argument values to function parameters
-  auto functionArgIt = I.arg_begin();
-  auto functionParamIt = calledFunction->arg_begin();
-
+bool VsaVisitor::mergeParamDomains(CallInst &callInst, State &calleeState) {
   bool paramDomainChanged = false;
 
-  for (; functionArgIt != I.arg_end() && functionParamIt != calledFunction->arg_end();
+  auto functionArgIt = callInst.arg_begin();
+  auto calledFunction = callInst.getCalledFunction();
+  auto functionParamIt = calledFunction->arg_begin();
+  
+  for (; functionArgIt != callInst.arg_end() && functionParamIt != calledFunction->arg_end();
          functionArgIt++, functionParamIt++) {
-    auto &functionArg = *functionArgIt;
-    auto functionArgValue = functionArg.get();
 
     auto &functionParam = *functionParamIt;
-
     auto oldParamDomain = calleeState.findAbstractValueOrBottom(&functionParam);
-    auto argDomain = newState.getAbstractValue(functionArgValue);
+    auto argDomain = newState.getAbstractValue(*functionArgIt);
     auto newDomain = oldParamDomain->leastUpperBound(*argDomain);
 
     if (*newDomain <= *oldParamDomain) {
@@ -346,14 +348,10 @@ void VsaVisitor::visitCallInst(CallInst &I) {
     calleeState.put(functionParam, newDomain);
     paramDomainChanged = true;
   }
-
-  assert(functionArgIt == I.arg_end() && functionParamIt == calledFunction->arg_end());
-
-  if (paramDomainChanged || !visitedCalleeAlready) {
-    worklist.push({calleeCallHierarchy, &calleeBB});
-    setShouldSkipInstructions(true);
-  }
-
+  
+  assert(functionArgIt == callInst.arg_end() && functionParamIt == calledFunction->arg_end());
+  
+  return paramDomainChanged;
 }
 
 void VsaVisitor::visitReturnInst(ReturnInst &I) {

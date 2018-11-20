@@ -112,6 +112,10 @@ private:
   ProgramPoints &getCurrentProgramPoints();
   ProgramPoints &getProgramPoints(CallHierarchy &callHierarchy);
 
+  /// merges domains of parameters of called function with argument domains.
+  /// returns true if any parameter domain has changed.
+  bool mergeParamDomains(CallInst &callInst, State &calleeState);
+
   /// puts current newState into global program points or
   /// merges it with the old one.
   void upsertNewState(BasicBlock *currentBB);
