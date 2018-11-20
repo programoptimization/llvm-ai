@@ -16,8 +16,6 @@ src/interprocedural/ReturnDomainJoin.cpp
 src/interprocedural/CallHierarchy.h
 src/interprocedural/CallHierarchy.cpp
 src/interprocedural/Hash.h
-src/CallStringPass.h
-src/CallStringPass.cpp
 src/vsa.h
 src/vsa.cpp
 src/abstract_domain/BoundedSet.h
