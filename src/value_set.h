@@ -134,7 +134,7 @@ public:
         }
     }
     
-    bool merge(AbstractStateValueSet const& other) {
+    bool merge(AbstractStateValueSet const& other, int op=1) {
         bool changed = false;
 
         if (isBottom < other.isBottom) {
@@ -146,13 +146,24 @@ public:
         for (std::pair<llvm::Value*, AbstractDomain> i: other.values) {
             // If our value did not exist before, it will be implicitely initialised as bottom,
             // which works just fine.
-            AbstractDomain v = AbstractDomain::upperBound(values[i.first], i.second);
+            AbstractDomain v;
+            std::string operation = "merging";
+
+            if (op == 1) {
+                v = AbstractDomain::upperBound(values[i.first], i.second); // upper bound
+            } else if (op == 2) {
+                v = values[i.first].widen(i.second); // widen
+                operation = "widening";
+            } else if (op == 3) {
+                v = values[i.first]._narrow(i.second);
+                operation = "narrowing";
+            }
 
             // No change, nothing to do here
             if (v == values[i.first]) continue;
 
             if (i.first->getName().size())
-                dbgs(3) << "    %" << i.first->getName() << " set to " << v << ", merging "
+                dbgs(3) << "    %" << i.first->getName() << " set to " << v << ", " << operation << " "
                         << values[i.first] << " and " << i.second << '\n';
                 
             values[i.first] = v;
@@ -238,6 +249,34 @@ public:
         } else {
             dbgs(3) << "      No restrictions were derived.\n";
         }
+    }
+
+    bool widen(AbstractStateValueSet const& other) {
+        bool changed = false;
+
+        if (isBottom < other.isBottom) {
+            dbgs(3) << "    No longer bottom\n";
+            changed = true;
+            isBottom = false;
+        }
+
+        for (std::pair<llvm::Value*, AbstractDomain> i: other.values) {
+            // If our value did not exist before, it will be implicitely initialised as bottom,
+            // which works just fine.
+            AbstractDomain v = values[i.first].widen(i.second);
+
+            // No change, nothing to do here
+            if (v == values[i.first]) continue;
+
+            if (i.first->getName().size())
+                dbgs(3) << "    %" << i.first->getName() << " set to " << v << ", widening "
+                        << values[i.first] << " and " << i.second << '\n';
+
+            values[i.first] = v;
+            changed = true;
+
+        }
+        return changed;
     }
 
     void printIncoming(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {
