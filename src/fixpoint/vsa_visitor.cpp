@@ -413,11 +413,12 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
 void VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
                                     CallHierarchy &lastCallHierarchy,
                                     std::shared_ptr<AbstractDomain> returnDomain) {
-  auto &lastCallProgramPoints = getProgramPoints(lastCallHierarchy)[lastCallInst.getParent()];
-  auto oldCallInstDomain = lastCallProgramPoints.findAbstractValueOrBottom(&lastCallInst);
+
+  auto &lastCallState = getProgramPoints(lastCallHierarchy)[lastCallInst.getParent()];
+  auto oldCallInstDomain = lastCallState.findAbstractValueOrBottom(&lastCallInst);
   auto newCallInstDomain = oldCallInstDomain->leastUpperBound(*returnDomain);
 
-  lastCallProgramPoints.put(lastCallInst, newCallInstDomain);
+  lastCallState.put(lastCallInst, newCallInstDomain);
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {

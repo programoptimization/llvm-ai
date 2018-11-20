@@ -97,9 +97,6 @@ public:
   /// default
   void visitInstruction(Instruction &I);
 
-  void upsertNewState(BasicBlock *currentBB);
-  void mergeReturnDomains(CallInst &lastCallInst, CallHierarchy &lastCallHierarchy, std::shared_ptr<AbstractDomain> returnDomain);
-
   void setCurrentCallHierarchy(CallHierarchy callHierarchy);
 
   void makeRunnable();
@@ -108,6 +105,13 @@ private:
   /// return the program points
   std::map<BasicBlock *, State> &getCurrentProgramPoints();
   std::map<BasicBlock *, State> &getProgramPoints(CallHierarchy& callHierarchy);
+
+  /// puts current newState into global program points or
+  /// merges it with the old one.
+  void upsertNewState(BasicBlock *currentBB);
+
+  /// merges return domain with call-site domain
+  void mergeReturnDomains(CallInst &lastCallInst, CallHierarchy &lastCallHierarchy, std::shared_ptr<AbstractDomain> returnDomain);
 
   /// push directly reachable basic blocks onto worklist
   void pushSuccessors(TerminatorInst &I);
