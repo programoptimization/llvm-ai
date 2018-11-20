@@ -42,13 +42,5 @@ build/
 *.a
 *.lib
 
-# Executables
-*.exe
-*.out
-
-# llvm
-*.ll
-*.bc
-
 # Jupyter notebook checkpoints
 .ipynb_checkpoints

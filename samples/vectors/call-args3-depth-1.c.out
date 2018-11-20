@@ -1,0 +1,19 @@
+- "main":
+  - returns:
+    - "0[13, 13]_32"
+- "main/0:0/baz":
+  - arguments:
+    - 0: "0[2, 2]_32"
+  - returns:
+    - "0[4, 4]_32"
+- "main/0:1/baz":
+  - arguments:
+    - 0: "0[3, 3]_32"
+  - returns:
+    - "0[9, 9]_32"
+- "main/0:2/foo":
+  - arguments:
+    - 0: "0[4, 4]_32"
+    - 1: "0[9, 9]_32"
+  - returns:
+    - "0[13, 13]_32"

@@ -76,7 +76,7 @@ do
 
     # Extract the run parameters from the C file which are inclosed
     # in the first line by '// OPT: "????"'.
-    PARAM=($(head -n 1 $f | grep "// OPT:" | sed -e 's/\/\/ OPT: "\(.*\)\"/\1/'))
+    PARAM=$(head -n 1 $f | grep "// OPT:" | sed -e 's/\/\/ OPT: "\(.*\)\"/\1/')
     if [[ ! -z "$PARAM" ]];
       then
         echo "Passing additional parameters to opt: \"$PARAM\""
@@ -87,7 +87,7 @@ do
       # On windows we are expecting the opt tool to contain our pass
       ${VSA_LLVM_PATH}/bin/opt -${PASS} $PARAM < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
     else
-      ${VSA_LLVM_PATH}/bin/opt -load ${VSA_LLVM_PATH}/lib/${EXE} -${PASS} $PARAM < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
+      ${VSA_LLVM_PATH}/bin/opt -load ${VSA_LLVM_PATH}/lib/${EXE} -${PASS} ${PARAM} < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
     fi
     cp -n build/$f.out build/$f.ref
 done
@@ -96,10 +96,10 @@ printf "\nTEST SUMMARY:\n"
 for f in ${ARRAY[*]};
 do
     # Find out to which file we are comparing the file
-    if [[ -e vectors/$f.yml ]]
+    if [[ -e vectors/$f.out ]]
     then
-        echo "Comparing against vector file vectors/$f.yml:"
-        VECTOR_FILE="vectors/$f.yml"
+        echo "Comparing against vector file vectors/$f.out:"
+        VECTOR_FILE="vectors/$f.out"
     else
         echo "Comparing against the old output:"
         VECTOR_FILE="build/$f.ref"
