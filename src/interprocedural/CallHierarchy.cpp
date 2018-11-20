@@ -10,6 +10,17 @@
 #include <llvm/Support/raw_ostream.h>
 
 namespace pcpo {
+static bool isMainFunction(llvm::Function *function) {
+  return function->getName() == "main";
+}
+
+CallHierarchy::CallHierarchy(llvm::Function *currentFunction,
+                             CallInstructions callInsts, std::size_t offset)
+    : currentFunction(currentFunction), callInsts(std::move(callInsts)),
+      offset(offset) {
+  /// Assert against bad offsets
+  assert(offset <= this->callInsts.size());
+}
 
 std::size_t CallHierarchy::size() const {
   return std::distance(callInstructionsBegin(), callInstructionsEnd());
@@ -127,7 +138,12 @@ template <typename T> std::size_t indexOfChildInParent(T const *child) {
 }
 
 void CallHierarchy::print(llvm::raw_ostream &os) const {
-  os << currentFunction->getName();
+  // Call string zero or main function:
+  if (isMainFunction(getCurrentFunction()) ||
+      (callInstructionsBegin() == callInstructionsEnd())) {
+    os << getCurrentFunction()->getName();
+    return;
+  }
 
   auto instructions = llvm::make_range(callInstructionsBegin(), //
                                        callInstructionsEnd());
@@ -153,11 +169,9 @@ raw_ostream &operator<<(raw_ostream &os, pcpo::CallHierarchy const &hierarchy) {
 
 size_t std::hash<pcpo::CallHierarchy>::
 operator()(pcpo::CallHierarchy const &hierarchy) const {
-  auto curFunctionHash = std::hash<void *>{}(hierarchy.currentFunction);
-  auto callInstsHash = pcpo::HashRange(hierarchy.callInstructionsBegin(),
-                                       hierarchy.callInstructionsEnd());
-
-  std::size_t hierarchyHash = curFunctionHash;
-  pcpo::HashCombine(hierarchyHash, callInstsHash);
-  return hierarchyHash;
+  std::size_t hash = 0;
+  pcpo::HashRangeCombine(hash, hierarchy.callInstructionsBegin(),
+                         hierarchy.callInstructionsEnd());
+  pcpo::HashCombine(hash, hierarchy.getCurrentFunction());
+  return hash;
 }

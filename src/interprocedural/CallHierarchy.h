@@ -20,12 +20,7 @@ class CallHierarchy {
 public:
   explicit CallHierarchy(llvm::Function *currentFunction,
                          CallInstructions callInsts = {},
-                         std::size_t offset = 0U)
-      : currentFunction(currentFunction), callInsts(std::move(callInsts)),
-        offset(offset) {
-    /// Assert against bad offsets
-    assert(offset <= this->callInsts.size());
-  }
+                         std::size_t offset = 0U);
 
   /// Returns the height of the current hierarchy
   std::size_t size() const;
