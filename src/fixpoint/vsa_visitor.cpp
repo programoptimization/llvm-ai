@@ -17,19 +17,7 @@ void VsaVisitor::visitBasicBlock(BasicBlock &BB) {
     auto& oldState = getCurrentProgramPoints()[&BB];
     /// mark state such that it cannot be bottom at any time
     oldState.markVisited();
-
     newState = oldState;
-
-//    for (auto &arg : BB.getParent()->args()) {
-//      if (arg.getType()->isIntegerTy()) {
-//        auto argumentDomain = getCurrentProgramPoints()[&BB].findAbstractValueOrNull(&arg);
-//
-//        if (argumentDomain != nullptr) {
-//          newState.put(arg, argumentDomain);
-//        }
-//      }
-//    }
-
     return;
   }
 
@@ -339,7 +327,6 @@ void VsaVisitor::visitCallInst(CallInst &I) {
 
   bool paramDomainChanged = false;
 
-  //TODO ensure arguments are correctly merged to parameters' abstract domains
   for (; functionArgIt != I.arg_end() && functionParamIt != calledFunction->arg_end();
          functionArgIt++, functionParamIt++) {
     auto &functionArg = *functionArgIt;
