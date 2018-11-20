@@ -27,10 +27,11 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     EXE=llvm-vsa.so
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     EXE=llvm-vsa.dylib
-elif [[ "$OSTYPE" == "win32" ]]; then
-    EXE=llvm-vsa.dylib.dll
+elif [[ "$OSTYPE" == "msys" ]]; then
+    # We build the pass directly into opt on windows
+    EXE=""
 else
-    echo "Unknown OS check run.sh:21"
+    echo "Unknown OS check run.sh:34"
 fi
 
 PASS=vsapass
@@ -73,7 +74,12 @@ do
     # ... disassemble optimized file
     ${VSA_LLVM_PATH}/bin/llvm-dis build/$f-opt.bc
     # ... run VSA
-    ${VSA_LLVM_PATH}/bin/opt -load ${VSA_LLVM_PATH}/lib/${EXE} -${PASS} < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
+    if [[ "$OSTYPE" == "msys" ]]; then
+      # On windows we are expecting the opt tool to contain our pass
+      ${VSA_LLVM_PATH}/bin/opt -${PASS} < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
+    else
+      ${VSA_LLVM_PATH}/bin/opt -load ${VSA_LLVM_PATH}/lib/${EXE} -${PASS} < build/$f-opt.bc > /dev/null 2> >(tee build/$f.out >&2)
+    fi
     cp -n build/$f.out build/$f.ref
 done
 
@@ -81,10 +87,10 @@ printf "\nTEST SUMMARY:\n"
 for f in ${ARRAY[*]};
 do
     # Find out to which file we are comparing the file
-    if [[ -e vectors/$f.txt ]]
+    if [[ -e vectors/$f.yml ]]
     then
-        echo "Comparing against vector file vectors/$f.txt:"
-        VECTOR_FILE="vectors/$f.txt"
+        echo "Comparing against vector file vectors/$f.yml:"
+        VECTOR_FILE="vectors/$f.yml"
     else
         echo "Comparing against the old output:"
         VECTOR_FILE="build/$f.ref"
