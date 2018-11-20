@@ -18,17 +18,14 @@ class CallHierarchy {
   using CallInstructions = std::vector<llvm::CallInst *>;
 
 public:
-  explicit CallHierarchy(llvm::Function *mainFunction,
+  explicit CallHierarchy(llvm::Function *currentFunction,
                          CallInstructions callInsts = {},
                          std::size_t offset = 0U)
-      : mainFunction(mainFunction), callInsts(std::move(callInsts)),
+      : currentFunction(currentFunction), callInsts(std::move(callInsts)),
         offset(offset) {
     /// Assert against bad offsets
     assert(offset <= this->callInsts.size());
   }
-
-  /// Returns true when we are currently iside the main function
-  bool isInMainFunction() const;
 
   /// Returns the height of the current hierarchy
   std::size_t size() const;
@@ -60,8 +57,8 @@ private:
   CallInstructions::const_iterator callInstructionsEnd() const;
 
   /// In case the call hierarchy empty we still require to return the
-  /// current function we are inside and this will be the main function.
-  llvm::Function *mainFunction;
+  /// current function we are inside.
+  llvm::Function *currentFunction;
   /// A list of all call instructions inside the hierarchy
   CallInstructions callInsts;
   /// The offset the call hierarchy starts when we limited it

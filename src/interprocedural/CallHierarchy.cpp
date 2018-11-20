@@ -10,7 +10,6 @@
 #include <llvm/Support/raw_ostream.h>
 
 namespace pcpo {
-bool CallHierarchy::isInMainFunction() const { return callInsts.empty(); }
 
 std::size_t CallHierarchy::size() const {
   return std::distance(callInstructionsBegin(), callInstructionsEnd());
@@ -24,7 +23,8 @@ CallHierarchy CallHierarchy::push(llvm::CallInst *callInst) const {
       std::max(std::int64_t(0), std::int64_t(newCallInsts.size()) -
                                     std::int64_t(callStringDepth()));
 
-  return CallHierarchy(mainFunction, std::move(newCallInsts), newOffset);
+  auto nextCurrentFunction = callInst->getCalledFunction();
+  return CallHierarchy(nextCurrentFunction, std::move(newCallInsts), newOffset);
 }
 
 CallHierarchy CallHierarchy::pop(std::size_t frame_count) const {
@@ -37,23 +37,19 @@ CallHierarchy CallHierarchy::pop(std::size_t frame_count) const {
   std::size_t newOffset = std::max(
       std::int64_t(0), std::int64_t(offset) - std::int64_t(frame_count));
 
-  return CallHierarchy(mainFunction, std::move(newCallInsts), newOffset);
+  /// callInsts must not be empty
+  auto prevCurrentFunction = callInsts.back()->getFunction();
+  return CallHierarchy(prevCurrentFunction, std::move(newCallInsts), newOffset);
 }
 
 llvm::Function *CallHierarchy::getCurrentFunction() const {
-  if (isInMainFunction()) {
-    // If we are in the main function return it
-    return mainFunction;
-  } else {
-    // Otherwise return the current function we are inside
-    return callInsts.back()->getCalledFunction();
-  }
+  return currentFunction;
 }
 
 bool CallHierarchy::operator==(CallHierarchy const &other) const {
-  if (isInMainFunction() && other.isInMainFunction()) {
-    // If the call hierarchies are empty just compare the main functions
-    return mainFunction == other.mainFunction;
+  /// The last functions in the hierarchies do not match
+  if (currentFunction != other.currentFunction) {
+    return false;
   }
 
   /// The hierarchy depth of both hierarchies don't match
@@ -91,7 +87,7 @@ llvm::CallInst *CallHierarchy::getLastCallInstruction() const {
   return callInsts.back();
 }
 
-size_t CallHierarchy::callStringDepth() { return 1; }
+size_t CallHierarchy::callStringDepth() { return 0; }
 
 bool CallHierarchy::operator<(CallHierarchy const &other) const {
   llvm::SmallString<128> left;
@@ -131,10 +127,7 @@ template <typename T> std::size_t indexOfChildInParent(T const *child) {
 }
 
 void CallHierarchy::print(llvm::raw_ostream &os) const {
-  if (isInMainFunction()) {
-    os << mainFunction->getName();
-    return;
-  }
+  os << currentFunction->getName();
 
   auto instructions = llvm::make_range(callInstructionsBegin(), //
                                        callInstructionsEnd());
@@ -160,11 +153,11 @@ raw_ostream &operator<<(raw_ostream &os, pcpo::CallHierarchy const &hierarchy) {
 
 size_t std::hash<pcpo::CallHierarchy>::
 operator()(pcpo::CallHierarchy const &hierarchy) const {
-  if (hierarchy.isInMainFunction()) {
-    // if we are in the main function just return its hash
-    return std::hash<void *>{}(hierarchy.mainFunction);
-  } else {
-    return pcpo::HashRange(hierarchy.callInstructionsBegin(),
-                           hierarchy.callInstructionsEnd());
-  }
+  auto curFunctionHash = std::hash<void *>{}(hierarchy.currentFunction);
+  auto callInstsHash = pcpo::HashRange(hierarchy.callInstructionsBegin(),
+                                       hierarchy.callInstructionsEnd());
+
+  std::size_t hierarchyHash = curFunctionHash;
+  pcpo::HashCombine(hierarchyHash, callInstsHash);
+  return hierarchyHash;
 }
