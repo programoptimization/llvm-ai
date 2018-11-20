@@ -79,18 +79,21 @@ public:
       auto const stateItr = entry->second.find(firstBlock);
       assert(stateItr != entry->second.end());
 
-      TEST_OUTPUT(hierarchy << " ");
+      TEST_OUTPUT("- \"" << hierarchy << "\":");
 
-      TEST_OUTPUT("  arguments:");
-      for (auto &&arg : currentFunction->args()) {
-        auto const domain = stateItr->second.findAbstractValueOrBottom(&arg);
-        TEST_OUTPUT("    - " << arg.getArgNo() << ": " << *domain);
+      auto args = currentFunction->args();
+      if (args.begin() != args.end()) {
+        TEST_OUTPUT("  - arguments:");
+        for (auto &&arg : args) {
+          auto const domain = stateItr->second.findAbstractValueOrBottom(&arg);
+          TEST_OUTPUT("    - " << arg.getArgNo() << ": \"" << *domain << "\"");
+        }
       }
 
       if (currentFunction->getReturnType()->isIntegerTy()) {
         auto const returnDomain = joinReturnDomain(entry->second);
-        TEST_OUTPUT("  returns:");
-        TEST_OUTPUT("    - " << *returnDomain);
+        TEST_OUTPUT("  - returns:");
+        TEST_OUTPUT("    - \"" << *returnDomain << "\"");
       }
     }
 
