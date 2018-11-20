@@ -16,7 +16,7 @@ using namespace llvm;
 namespace pcpo {
 
 class State {
-    friend class BranchConditions;
+  friend class BranchConditions;
 
 public:
   /// constructor: bottom
@@ -29,11 +29,9 @@ public:
   shared_ptr<AbstractDomain> getAbstractValue(Value *v) const;
 
   /// find abstract domain of a value, return bottom if there is none
-  shared_ptr<AbstractDomain> findAbstractValueOrBottom(Value* v) const;
+  shared_ptr<AbstractDomain> findAbstractValueOrBottom(Value *v) const;
 
-  shared_ptr<AbstractDomain> findAbstractValueOrNull(Value* v) const;
-
-    /// return if a global state for this variable is available
+  /// return if a global state for this variable is available
   bool isAvailable(Value *v) const;
 
   /// create least upper bound (lub) in place
@@ -63,7 +61,7 @@ private:
   std::map<Value *, std::shared_ptr<AbstractDomain>> vars;
 
   /// How often has this value been updated (needed for widening)
-  /// zero if AD currenly used for this value does not use widening
+  /// zero if AD currently used for this value does not use widening
   std::map<Value *, int> changeCounts;
 
   bool bottom;

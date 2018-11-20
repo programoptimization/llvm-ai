@@ -68,20 +68,6 @@ shared_ptr<AbstractDomain> State::findAbstractValueOrBottom(Value* v) const {
   return AD_TYPE::create_bottom(v->getType()->getIntegerBitWidth());
 }
 
-shared_ptr<AbstractDomain> State::findAbstractValueOrNull(Value* v) const {
-  if (ConstantInt::classof(v)) {
-    return shared_ptr<AbstractDomain>(new AD_TYPE(reinterpret_cast<ConstantInt *>(v)->getValue()));
-  }
-
-  const auto find = vars.find(v);
-
-  if (find != vars.end()) {
-    return find->second;
-  }
-
-  return nullptr;
-}
-
 bool State::isAvailable(Value *v) const {
   if (ConstantInt::classof(v)) {
     return true;
