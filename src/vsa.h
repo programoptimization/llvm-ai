@@ -18,17 +18,16 @@ using namespace pcpo;
 
 namespace {
 struct VsaPass : public ModulePass {
+
   // Pass identification, replacement for typeid
   static char ID;
 
   WorkList worklist;
 
-  std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> programPoints;
-
-//  VsaResult result;
+  std::unordered_map<CallHierarchy, std::map<BasicBlock *, State>> programPointsByHierarchy;
 
 public:
-  explicit VsaPass() : ModulePass(ID), worklist(), programPoints() {}
+  explicit VsaPass() : ModulePass(ID), worklist(), programPointsByHierarchy() {}
 
   bool runOnModule(Module &module) override {
     auto const mainFunction = module.getFunction("main");
@@ -37,55 +36,19 @@ public:
     }
 
     CallHierarchy initCallHierarchy{mainFunction};
+    VsaVisitor vis(worklist, initCallHierarchy, programPointsByHierarchy);
 
     worklist.push(WorkList::Item(initCallHierarchy, &mainFunction->front()));
 
-    VsaVisitor vis(worklist, initCallHierarchy, programPoints);
-
-    unsigned long long numberOfItemsVisited = 0;
     while (!worklist.empty()) {
       auto item = worklist.pop();
 
       vis.setShouldSkipInstructions(false);
       vis.setCurrentCallHierarchy(item.hierarchy);
       vis.visit(*item.block);
-
-      numberOfItemsVisited++;
     }
 
-    std::set<CallHierarchy> orderedHierarchies;
-    for (auto &&entry : programPoints) {
-      orderedHierarchies.insert(entry.first);
-    }
-
-    for (auto const &hierarchy : orderedHierarchies) {
-      Function *currentFunction = hierarchy.getCurrentFunction();
-      auto *firstBlock = &currentFunction->front();
-
-      auto entry = programPoints.find(hierarchy);
-      assert(entry != programPoints.end());
-
-      // The state is required to exist
-      auto const stateItr = entry->second.find(firstBlock);
-      assert(stateItr != entry->second.end());
-
-      TEST_OUTPUT("- \"" << hierarchy << "\":");
-
-      auto args = currentFunction->args();
-      if (args.begin() != args.end()) {
-        TEST_OUTPUT("  - arguments:");
-        for (auto &&arg : args) {
-          auto const domain = stateItr->second.findAbstractValueOrBottom(&arg);
-          TEST_OUTPUT("    - " << arg.getArgNo() << ": \"" << *domain << "\"");
-        }
-      }
-
-      if (currentFunction->getReturnType()->isIntegerTy()) {
-        auto const returnDomain = joinReturnDomain(entry->second);
-        TEST_OUTPUT("  - returns:");
-        TEST_OUTPUT("    - \"" << *returnDomain << "\"");
-      }
-    }
+    printPassResultsToTestOutput();
 
     return false;
   }
@@ -95,7 +58,43 @@ public:
     AU.setPreservesAll();
   }
 
-//  VsaResult &getResult() { return result; }
+private:
+
+  void printPassResultsToTestOutput() {
+    for (auto const &hierarchy : collectOrderedCallHierarchies()) {
+      Function *currentFunction = hierarchy.getCurrentFunction();
+      auto *firstBlock = &currentFunction->front();
+
+      auto const &programPoints = programPointsByHierarchy.at(hierarchy);
+      auto const &state = programPoints.at(firstBlock);
+
+      TEST_OUTPUT("- \"" << hierarchy << "\":");
+
+      auto args = currentFunction->args();
+      if (args.begin() != args.end()) {
+        TEST_OUTPUT("  - arguments:");
+        for (auto &&arg : args) {
+          auto const domain = state.findAbstractValueOrBottom(&arg);
+          TEST_OUTPUT("    - " << arg.getArgNo() << ": \"" << *domain << "\"");
+        }
+      }
+
+      if (currentFunction->getReturnType()->isIntegerTy()) {
+        auto const returnDomain = joinReturnDomain(programPoints);
+        TEST_OUTPUT("  - returns:");
+        TEST_OUTPUT("    - \"" << *returnDomain << "\"");
+      }
+    }
+  }
+
+  std::set<CallHierarchy> collectOrderedCallHierarchies() {
+    std::set<CallHierarchy> orderedHierarchies;
+    for (auto &&entry : programPointsByHierarchy) {
+      orderedHierarchies.insert(entry.first);
+    }
+    return orderedHierarchies;
+  }
+
 };
 
 char VsaPass::ID = 0;
