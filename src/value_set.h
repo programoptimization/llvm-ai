@@ -206,7 +206,8 @@ public:
         
         // Constrain the values if they exist.
         if (values.count(&lhs)) {
-            dbgs(3) << "      Deriving constraint %" << lhs.getName() << ' ' << get_predicate_name(pred) << " %" << rhs.getName()
+            dbgs(3) << "      Deriving constraint %" << lhs.getName()  << ' ' << get_predicate_name(pred) << ' ';
+            (rhs.getName().size() ? dbgs(3) << "%" << rhs.getName() : dbgs(3) << rhs)
                     << ", with %" << lhs.getName() << " = " << values[&lhs];
             if (values.count(&rhs)) dbgs(3) << " and %" << rhs.getName() << " = " << values[&rhs];
             dbgs(3) << '\n';
@@ -215,7 +216,8 @@ public:
             lhs_new = AbstractDomain::refine_branch(pred, lhs, rhs, values[&lhs], getAbstractValue(rhs));
         }
         if (values.count(&rhs)) {
-            dbgs(3) << "      Deriving constraint %" << rhs.getName() << ' ' << get_predicate_name(pred_s) << " %" << lhs.getName()
+            dbgs(3) << "      Deriving constraint %" << rhs.getName() << ' ' << get_predicate_name(pred_s) << ' ';
+            (lhs.getName().size() ? dbgs(3) << "%" << lhs.getName() : dbgs(3) << lhs)
                     << ", with %" << rhs.getName() << " = " << values[&rhs];
             if (values.count(&lhs)) dbgs(3) << " and %" << lhs.getName() << " = " << values[&lhs];
             dbgs(3) << '\n';
@@ -282,7 +284,6 @@ public:
             return AbstractDomain {false};
         }
     }
-
 };
 
 } /* end of namespace pcpo */
