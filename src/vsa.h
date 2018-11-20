@@ -31,12 +31,7 @@ public:
   explicit VsaPass() : ModulePass(ID), worklist(), programPoints() {}
 
   bool runOnModule(Module &module) override {
-    if (module.empty()) {
-      return false;
-    }
-
     auto const mainFunction = module.getFunction("main");
-
     if (!mainFunction) {
       return false;
     }
