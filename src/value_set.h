@@ -77,12 +77,16 @@ public:
         for (llvm::Argument& arg: f.args()) {
             values[&arg] = AbstractDomain {true};
         }
-        // All other values are uninitialised, so set them to 
-
         isBottom = false;
     }
 
-    void apply(llvm::BasicBlock& bb, std::vector<AbstractStateValueSet> const& pred_values) { 
+    void apply(llvm::BasicBlock& bb, std::vector<AbstractStateValueSet> const& pred_values) {
+        if (isBottom) {
+            dbgs(3) << "    Basic block is unreachable, everything is bottom\n";
+
+            return;
+        }
+        
         std::vector<AbstractDomain> operands;
 
         // Go through each instruction of the basic block and apply it to the state
@@ -104,9 +108,9 @@ public:
                         ++block;
                     }
 
-                    // Merge its value
+                    // Take the union of the values
                     AbstractDomain pred_value = pred_values[block].getAbstractValue(*phi->getIncomingValue(i));
-                    inst_result = AbstractDomain::upperBound(inst_result, pred_value);
+                    inst_result = AbstractDomain::merge(Merge_op::UPPER_BOUND, inst_result, pred_value);
 
                     operands.push_back(pred_value); // Keep the debug output happy
                 }
@@ -138,8 +142,7 @@ public:
     bool merge(Merge_op::Type op, AbstractStateValueSet const& other) {
         bool changed = false;
 
-        if (isBottom < other.isBottom) {
-            dbgs(3) << "    No longer bottom\n";
+        if (isBottom > other.isBottom) {
             changed = true;
             isBottom = false;
         }
@@ -153,13 +156,16 @@ public:
             if (v == values[i.first]) continue;
 
             if (i.first->getName().size())
-                dbgs(3) << "    %" << i.first->getName() << " set to " << v << ", merging "
+                dbgs(3) << "    %" << i.first->getName() << " set to " << v << ", " << Merge_op::name[op] << " "
                         << values[i.first] << " and " << i.second << '\n';
                 
             values[i.first] = v;
             changed = true;
 
         }
+
+        if (changed) checkForBottom(4);
+        
         return changed;
     }
     
@@ -241,6 +247,10 @@ public:
         } else {
             dbgs(3) << "      No restrictions were derived.\n";
         }
+
+        // This cannot happen when doing UPPER_BOUND or WIDEN, but for NARROW it is possible, so
+        // check just in case.
+        checkForBottom(6);
     }
 
     void printIncoming(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {
@@ -281,8 +291,26 @@ public:
         } else if (values.count(&value)) {
             return values.at(&value);
         } else {
-            return AbstractDomain {false};
+            return AbstractDomain {true};
         }
+    }
+
+    // If any of our values is bottom, then we are bottom as well. So this function checks that and
+    // normalises our value. Returns whether this changed our value (i.e. we are now bottom).
+    bool checkForBottom(int indent = 0) {
+        if (isBottom) return false;
+        
+        for (auto const& i: values) {
+            if (i.second == AbstractDomain {}) {
+                values.clear();
+                isBottom = true;
+
+                dbgs(3).indent(indent) << "Variable %" << i.first->getName() << " is bottom, so the state is as well.\n";
+                
+                return true;
+            }
+        }
+        return false;
     }
 };
 

@@ -1,4 +1,3 @@
-#include "fixpoint.h"
 
 #include <unordered_map>
 #include <vector>
@@ -9,87 +8,23 @@
 #include "llvm/Analysis/LoopInfo.h"
 
 #include "global.h"
-#include "fixpoint_widening.cpp"
 #include "value_set.h"
 #include "simple_interval.h"
 
 namespace pcpo {
 
-// @Cleanup: getAnalysisUsage ??
-
-static llvm::RegisterPass<AbstractInterpretationPass> Y("painpass", "AbstractInterpretation Pass");
-
-char AbstractInterpretationPass::ID;
-
-int debug_level = DEBUG_LEVEL; // from global.hpp
-
-class AbstractStateDummy {
-public:
-    enum MergeOperation: int {
-        INVALID,
-        SMALL_UPPER_BOUND,
-        WIDEN,
-        NARROW
-    };
-
-    // This has to initialise the state to bottom.
-    AbstractStateDummy() = default;
-
-    // Creates a copy of the state. Using the default copy-constructor should be fine here, but if
-    // some members do something weird you maybe want to implement this as
-    //     AbstractState().merge(state)
-    AbstractStateDummy(AbstractStateDummy const& state) = default;
-
-    // Initialise the state to the incoming state of the function. This should do something like
-    // assuming the parameters can be anything.
-    explicit AbstractStateDummy(llvm::Function& f) {}
-
-    // Applies the changes needed to reflect executing the instructions in the basic block. Before
-    // this operation is called, the state is the one upon entering bb, afterwards it should be (an
-    // upper bound of) the state leaving the basic block.
-    //  predecessors contains the outgoing state for all the predecessors, in the same order as they
-    // are listed in llvm::predecessors(bb).
-    void apply(llvm::BasicBlock& bb, std::vector<AbstractStateDummy> const& predecessors) {};
-
-    // This 'merges' two states, which is the operation we do fixpoint iteration over. Currently,
-    // there are three possibilities for op:
-    //   1. UPPER_BOUND: This has to return some upper bound of itself and other, with more precise
-    //      bounds being preferred.
-    //   2. WIDEN: Same as UPPER_BOUND, but this operation should sacrifice precision to converge
-    //      quickly. Returning T would be fine, though maybe not optimal. For example for intervals,
-    //      an implementation could ensure to double the size of the interval.
-    //   3. NARROW: Return a value between the intersection of the state and other, and the
-    //      state. In pseudocode:
-    //          intersect(state, other) <= narrow(state, other) <= state
-    // For all of the above, this operation returns whether the state changed as a result.
-    // IMPORTANT: The simple fixpoint algorithm only performs UPPER_BOUND, so you do not need to
-    // implement the others if you just use that one. (The more advanced algorithm in
-    // fixpoint_widening.cpp uses all three operations.)
-    bool merge(Merge_op::Type op, AbstractStateDummy const& other) { return false; };
-
-    // Restrict the set of values to the one that allows 'from' to branch towards
-    // 'towards'. Starting with the state when exiting from, this should compute (an upper bound of)
-    // the possible values that would reach the block towards. Doing nothing thus is a valid
-    // implementation.
-    void branch(llvm::BasicBlock& from, llvm::BasicBlock& towards) {};
-
-    // Functions to generate the debug output. printIncoming should output the state as of entering
-    // the basic block, printOutcoming the state when leaving it.
-    void printIncoming(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {};
-    void printOutgoing(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {};
-};
-
-// Run the simple fixpoint algorithm. AbstractState should implement the interface documented in
-// AbstractStateDummy (no need to subclass or any of that, just implement the methods with the right
-// signatures and take care to fulfil the contracts outlines above).
-// Note that a lot of this code is duplicated in executeFixpointAlgorithmWidening in
-// fixpoint_widening.cpp, so if you fix any bugs in here, they probably should be fixed there as
-// well.
+// Run the fixpoint algorithm using widening and narrowing. Note that a lot of code in here is
+// duplicated from executeFixpointAlgorithm. If you just want to understand the basic fixpoint
+// iteration, you should take a look at that instead.
+//  The interface for AbstractState is the same as for the simple fixpoint (documented in
+// AbstractStateDummy), except that is needs to support the merge operations WIDEN and NARROW, as
+// you can probably guess.
 //  Tip: Look at a diff of fixpoint.cpp and fixpoint_widening.cpp with a visual diff tool (I
 // recommend Meld.)
 template <typename AbstractState>
-void executeFixpointAlgorithm(llvm::Module& M) {
+void executeFixpointAlgorithmWidening(llvm::Module& M) {
     constexpr int iterations_max = 1000;
+    constexpr int widen_after = 2; // Number of iteration after which we switch to widening.
 
     // A node in the control flow graph, i.e. a basic block. Here, we need a bit of additional data
     // per node to execute the fixpoint algorithm.
@@ -103,14 +38,23 @@ void executeFixpointAlgorithm(llvm::Module& M) {
         // function to the incoming values, which is the correct thing to do for initial basic
         // blocks.
         llvm::Function* func_entry = nullptr;
+
+        bool should_widen = false; // Whether we want to widen at this node
+        int change_count = 0; // How often has node changed during iterations
     };
 
     std::vector<Node> nodes;
     std::unordered_map<llvm::BasicBlock*, int> nodeIdMap; // Maps basic blocks to the ids of their corresponding nodes
     std::vector<int> worklist; // Contains the ids of nodes that need to be processed
+    bool phase_narrowing = false; // If this is set, we are in the narrowing phase of the fixpoint algorithm
 
-    // TODO: Check what this does for release clang, probably write out a warning
     dbgs(1) << "Initialising fixpoint algorithm, collecting basic blocks\n";
+
+    // Push dummy element indicating the end of the widening phase of the fixpoint algorithm. As the
+    // worklist is processed in a LIFO order, this will be the last element coming out, indicating
+    // that the worklist is empty. Once that happens, we have obtained a valid solution (using
+    // widening) and can start to apply narrowing.
+    worklist.push_back(-1);
 
     for (llvm::Function& f: M.functions()) {
         // Check for external (i.e. declared but not defined) functions
@@ -131,6 +75,16 @@ void executeFixpointAlgorithm(llvm::Module& M) {
             nodeIdMap[node.bb] = node.id;
             nodes.push_back(node);
         }
+        
+        // Gather information about loops in the function. (We only want to widen a single node for
+        // each loop, as that is enough to guarantee fast termination.)
+        llvm::LoopInfoBase<llvm::BasicBlock, llvm::Loop> loopInfoBase;
+        loopInfoBase.analyze(llvm::DominatorTree {f});
+        for (llvm::Loop* loop: loopInfoBase.getLoopsInPreorder()) {
+            // We want to widen only the conditions of the loops
+            nodes[nodeIdMap.at(loop->getHeader())].should_widen = true;
+            dbgs(1) << "  Enabling widening for basic block " << loop->getHeader()->getName() << '\n';
+        }
 
         // Push the initial block into the worklist
         int entry_id = nodeIdMap.at(&f.getEntryBlock());
@@ -143,6 +97,22 @@ void executeFixpointAlgorithm(llvm::Module& M) {
             << ". Starting fixpoint iteration...\n";
 
     for (int iter = 0; !worklist.empty() and iter < iterations_max; ++iter) {
+        
+        // Check whether we have reached the end of the widening phase
+        if (worklist.back() == -1) {
+            worklist.pop_back();
+            phase_narrowing = true;
+            dbgs(1) << "\nStarting narrowing in iteration " << iter << "\n";
+
+            // We need to consider all nodes once more.
+            for (Node const& i: nodes) {
+                worklist.push_back(i.id);
+            }
+
+            --iter;
+            continue;
+        }
+
         Node& node = nodes[worklist.back()];
         worklist.pop_back();
         node.update_scheduled = false;
@@ -172,7 +142,7 @@ void executeFixpointAlgorithm(llvm::Module& M) {
             predecessors.push_back(state_branched);
         }
 
-        dbgs(2) << "  Relevant incoming state is:\n"; state_new.printIncoming(*node.bb, dbgs(2), 4);
+        dbgs(2) << "  Relevant incoming state\n"; state_new.printIncoming(*node.bb, dbgs(2), 4);
 
         // Apply the basic block
         dbgs(3) << "  Applying basic block\n";
@@ -180,13 +150,29 @@ void executeFixpointAlgorithm(llvm::Module& M) {
 
         // Merge the state back into the node
         dbgs(3) << "  Merging with stored state\n";
-        bool changed = node.state.merge(Merge_op::UPPER_BOUND, state_new);
+        
+        // We need to figure out what operation to apply.
+        Merge_op::Type op;
+        if (not phase_narrowing) {
+            if (node.should_widen and node.change_count >= widen_after) {
+                op = Merge_op::WIDEN;
+            } else {
+                op = Merge_op::UPPER_BOUND;
+            }
+        } else {
+            op = Merge_op::NARROW;
+        }
 
-        dbgs(2) << "  Outgoing state is:\n"; state_new.printOutgoing(*node.bb, dbgs(2), 4);
+        // Now do the actual operation
+        bool changed = node.state.merge(op, state_new);
+
+        dbgs(2) << "  Outgoing state\n"; state_new.printOutgoing(*node.bb, dbgs(2), 4);
 
         // No changes, so no need to do anything else
         if (not changed) continue;
 
+        ++node.change_count;
+        
         dbgs(2) << "  State changed, notifying " << llvm::succ_size(node.bb)
                 << (llvm::succ_size(node.bb) != 1 ? " successors\n" : " successor\n");
 
@@ -214,16 +200,4 @@ void executeFixpointAlgorithm(llvm::Module& M) {
     }
 }
 
-bool AbstractInterpretationPass::runOnModule(llvm::Module& M) {
-    using AbstractState = AbstractStateValueSet<SimpleInterval>;
-
-    // Use either the standard fixpoint algorithm or the version with widening
-    //executeFixpointAlgorithm        <AbstractState>(M);
-      executeFixpointAlgorithmWidening<AbstractState>(M);
-
-    // We never change anything
-    return false;
-}
-
 } /* end of namespace pcpo */
-

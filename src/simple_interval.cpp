@@ -114,14 +114,20 @@ SimpleInterval SimpleInterval::interpret(
     SimpleInterval a = operands[0];
     SimpleInterval b = operands[1];
 
+    // The following functions do not really want to deal with top. (Keep in mind that we do not
+    // need to always returns top, e.g. when doing division.) So instead we pass the full interval.
+    a = a._makeTopInterval(bitWidth);
+    b = b._makeTopInterval(bitWidth);
+
     // Handle integer compare instructions. This is not really useful, as it just determines whether
     // the comparison can be true or false. The actual branching logic in the value set does a more
     // careful analysis of which conditions lead to a basic block, deriving upper and lower bounds
     // on the variables involved. However, always getting top for the results annoyed me. (In
     // theory, someone could also do computations with them.
     if (llvm::ICmpInst* icmp = llvm::dyn_cast<llvm::ICmpInst>(&inst)) {
-        bool never_true  = refine_branch(icmp->getPredicate(),        *this, o).isBottom();
-        bool never_false = refine_branch(icmp->getInversePredicate(), *this, o).isBottom();
+        bool f = a.isBottom() or b.isBottom();
+        bool never_true  = f or _refine_branch(icmp->getPredicate(),        a, b).isBottom();
+        bool never_false = f or _refine_branch(icmp->getInversePredicate(), a, b).isBottom();
         if (never_true and never_false) {
             return SimpleInterval {};
         } else if (never_true) {
@@ -133,20 +139,12 @@ SimpleInterval SimpleInterval::interpret(
         }
     }
     
-    // The following functions do not really want to deal with top. (Keep in mind that we do not
-    // need to always returns top, e.g. when doing division.) So instead we pass the full interval.
-    a = a._makeTopInterval(bitWidth);
-    b = b._makeTopInterval(bitWidth);
 
 #define DO_BINARY_OV(x)                                                 \
     case llvm::Instruction::x:                                          \
         if (a.isBottom() or b.isBottom()) return SimpleInterval {};     \
         return a._##x(b, inst.hasNoUnsignedWrap(), inst.hasNoSignedWrap())._makeTopSpecial();
 #define DO_BINARY(x)                                                    \
-    case llvm::Instruction::x:                                          \
-        if (a.isBottom() or b.isBottom()) return SimpleInterval {};     \
-        return a._##x(b)._makeTopSpecial();
-#define DO_COMPARE(x)
     case llvm::Instruction::x:                                          \
         if (a.isBottom() or b.isBottom()) return SimpleInterval {};     \
         return a._##x(b)._makeTopSpecial();
@@ -158,8 +156,6 @@ SimpleInterval SimpleInterval::interpret(
         DO_BINARY(UDiv);
         DO_BINARY(URem);
         DO_BINARY(SRem);
-    case llvm::Instruction::ICmp:
-        return 
     default:
         return SimpleInterval {true};
     }
@@ -253,8 +249,8 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream& os, SimpleInterval a) {
     } else if(a.isTop()) {
         os << "T";
     } else {
-        os << "[" << a.begin.toString(10, true) << ", "
-           << a.end.toString(10, true) << "]";
+        os << "[" << a.begin.toString(10, a.begin.getBitWidth() > 1) << ", "
+           << a.end.toString(10, a.begin.getBitWidth() > 1) << "]";
     }
     return os;
 }
@@ -265,8 +261,8 @@ void SimpleInterval::printOut() const {
     } else if(state == TOP) {
         llvm::errs() << "T";
     } else {
-        llvm::errs() << "[" << begin.toString(10, true) << ", "
-           << end.toString(10, true) << "]";
+        llvm::errs() << "[" << begin.toString(10, begin.getBitWidth() > 1) << ", "
+           << end.toString(10, begin.getBitWidth() > 1) << "]";
     }
     llvm::errs() << '\n';
 }
