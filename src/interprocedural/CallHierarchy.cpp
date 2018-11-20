@@ -10,6 +10,9 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/Support/raw_ostream.h>
 
+// This is a command-line argument for the pass.
+// It is defined in vsa.cpp
+// If the argument is not provided it defaults to 0.
 extern llvm::cl::opt<unsigned> CallStringDepth;
 
 namespace pcpo {
