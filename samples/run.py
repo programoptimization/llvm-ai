@@ -10,30 +10,44 @@ CLANG_PATH = LLVM_PATH
 
 #TODO:
 #test if every necessary programs are compiled (opt, clang, ...)
-#remove files for and after run
-#add flag to run make
 #add flag for command line output
 #work with config file
 
 #do not modify
 PASS_LIB = LLVM_PATH + "/lib/llvm-pain.so"
 PASS = "painpass"
+MAKE_TARGET = "llvm-pain"
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("program", help="run on specific c file", nargs='*')
     parser.add_argument("-cfg", help="show llvm control flow graph", action="store_true")
     parser.add_argument("-print_commands", help="prints the commands executed", action="store_true")
+    parser.add_argument("-m", help="compiles pass before execution", action="store_true")
     args = parser.parse_args()
 
     # if no files are specified set it to all .c files in current directory
     if len(args.program) == 0:
         args.program = filter(lambda file : str(file).endswith('.c'), os.listdir(os.getcwd()))
 
+    if args.m:
+        print( "Started build" )
+        cur_dir = os.getcwd()
+        os.chdir(LLVM_PATH)
+        i = os.system("make "+MAKE_TARGET)
+        os.chdir(cur_dir)
+        if i:
+            print ("Build failed")
+            exit(i)
+        else:
+            print( "build finished" )
+
     for file in args.program:
         if not os.path.isfile(file):
             print ("ERROR: " + file +" wasn't found!")
             continue
+
+        print( "Running on file " + file + " ..." )
 
         if args.print_commands:
             print (getCompileToByteCodeCMD(file))
@@ -56,6 +70,9 @@ def main():
             os.system(getRunPassCMD(file) + " -view-cfg")
         else:
             os.system(getRunPassCMD(file))
+
+        #remove bytecode
+        os.system ("rm -r build/" + file + ".bc build/" + file + "-opt.bc")
 
     print( "Done" )
 
