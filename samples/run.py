@@ -10,39 +10,53 @@ CLANG_PATH = LLVM_PATH
 
 #TODO:
 #test if every necessary programs are compiled (opt, clang, ...)
-#remove files for and after run
-#add flag to run make
-#add flag for command line output
 #work with config file
 
 #do not modify
 PASS_LIB = LLVM_PATH + "/lib/llvm-pain.so"
 PASS = "painpass"
+MAKE_TARGET = "llvm-pain"
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("program", help="run on specific c file", nargs='*')
     parser.add_argument("-cfg", help="show llvm control flow graph", action="store_true")
     parser.add_argument("-print_commands", help="prints the commands executed", action="store_true")
+    parser.add_argument("-m", help="compiles pass before execution", action="store_true")
+    parser.add_argument("-o", help="shows output on stdout", action="store_true")
     args = parser.parse_args()
 
     # if no files are specified set it to all .c files in current directory
     if len(args.program) == 0:
         args.program = filter(lambda file : str(file).endswith('.c'), os.listdir(os.getcwd()))
 
+    if args.m:
+        print( "Started build" )
+        cur_dir = os.getcwd()
+        os.chdir(LLVM_PATH)
+        i = os.system("make "+MAKE_TARGET)
+        os.chdir(cur_dir)
+        if i:
+            print ("Build failed")
+            exit(i)
+        else:
+            print( "build finished" )
+
     for file in args.program:
         if not os.path.isfile(file):
             print ("ERROR: " + file +" wasn't found!")
             continue
+
+        print( "Running on file " + file + " ..." )
 
         if args.print_commands:
             print (getCompileToByteCodeCMD(file))
             print (getMem2RegCMD(file))
             print (getHumanReadableCMD(file))
             if args.cfg:
-                print (getRunPassCMD(file) + " -view-cfg")
+                print (getRunPassCMD(file, args.o) + " -view-cfg")
             else:
-                print (getRunPassCMD(file))
+                print (getRunPassCMD(file, args.o))
             return
 
         #create build directory
@@ -53,9 +67,12 @@ def main():
         os.system(getMem2RegCMD(file))
         os.system(getHumanReadableCMD(file))
         if args.cfg:
-            os.system(getRunPassCMD(file) + " -view-cfg")
+            os.system(getRunPassCMD(file, args.o) + " -view-cfg")
         else:
-            os.system(getRunPassCMD(file))
+            os.system(getRunPassCMD(file, args.o))
+
+        #remove bytecode
+        os.system ("rm -r build/" + file + ".bc build/" + file + "-opt.bc")
 
     print( "Done" )
 
@@ -69,8 +86,12 @@ def getMem2RegCMD(filename):
 def getHumanReadableCMD(filename):
     return LLVM_PATH + "/bin/llvm-dis build/" + filename + "-opt.bc"
 
-def getRunPassCMD(filename):
-    return LLVM_PATH + '/bin/opt -load "' + PASS_LIB + '" -' + PASS + ' -S -o /dev/null build/' + filename + '-opt.bc > build/' + filename + '.out 2>&1'
+def getRunPassCMD(filename, show_output):
+    ret =  LLVM_PATH + '/bin/opt -load "' + PASS_LIB + '" -' + PASS + ' -S -o /dev/null build/' + filename + '-opt.bc'
+    if(show_output == None):
+        return ret +' > build/' + filename + '.out 2>&1'
+    else:
+        return ret
 
 if __name__ == "__main__":
     main()
