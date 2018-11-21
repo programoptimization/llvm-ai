@@ -30,29 +30,29 @@ public:
     // This method does the actual abstract interpretation by executing the instruction on the
     // abstract domain, return (an upper bound of) the result. Relevant instructions are mostly the
     // arithmetic ones (like add, sub, mul, etc.). Comparisons are handled mostly using
-    // refine_branch, however you can still give bounds on their results here. (They just are not as
+    // refineBranch, however you can still give bounds on their results here. (They just are not as
     // useful for branching.) Control-flowy instructions, like phi nodes, are also handled above.
     static AbstractDomainDummy interpret (
         llvm::Instruction const& inst, std::vector<AbstractDomainDummy> const& operands
     ) { return AbstractDomainDummy(true); }
 
     // Return whether the two values represent the same thing
-    bool operator== (AbstractDomainDummy o) const {
-        assert(false); return false;
-    }
+    bool operator== (AbstractDomainDummy o) const
+        { assert(false); return false; }
     
     // Refine a by using the information that the value has to fulfill the predicate w.r.t. b. For
     // example, if the domain is an interval domain:
-    //     refine_branch( ULE, [5, 10], [7, 8] ) => [5, 8]
+    //     refineBranch( ULE, [5, 10], [7, 8] ) => [5, 8]
     // or
-    //     refine_branch( ULE, [5, 10], [7, 8] ) => [5, 10]
+    //     refineBranch( ULE, [5, 10], [7, 8] ) => [5, 10]
     // would be valid implementations, though the former is more precise. In this case the only
     // relevant information is that the number has to be less than or equal to 8.
-    //  The following properties have to be fulfilled, if c = refine_branch(~, a, b):
+    //  The following properties have to be fulfilled, if c = refineBranch(~, a, b):
     //     1. c <= a
-    //     2. For all x in a, y in b with x~y we have x in c.
-    static AbstractDomainDummy refine_branch (
-        llvm::CmpInst::Predicate pred, llvm::Value const& lhs, llvm::Value const& rhs,
+    //     2. For all x in a, y in b with x ~ y we have x in c.
+    // For more or less stupid reasons this function also gets the corresponding llvm values.
+    static AbstractDomainDummy refineBranch (
+        llvm::CmpInst::Predicate pred, llvm::Value const& a_value, llvm::Value const& b_value,
         AbstractDomainDummy a, AbstractDomainDummy b
     ) { return a; }
 
@@ -227,7 +227,7 @@ public:
             dbgs(3) << '\n';
 
             // For the lhs we say that 'lhs pred rhs' has to hold
-            lhs_new = AbstractDomain::refine_branch(pred, lhs, rhs, values[&lhs], getAbstractValue(rhs));
+            lhs_new = AbstractDomain::refineBranch(pred, lhs, rhs, values[&lhs], getAbstractValue(rhs));
         }
         if (values.count(&rhs)) {
             dbgs(3) << "      Deriving constraint %" << rhs.getName() << ' ' << get_predicate_name(pred_s) << ' ';
@@ -237,7 +237,7 @@ public:
             dbgs(3) << '\n';
 
             // Here, we take the swapped predicate and assert 'rhs pred_s lhs'
-            rhs_new = AbstractDomain::refine_branch(pred_s, rhs, lhs, values[&rhs], getAbstractValue(lhs));
+            rhs_new = AbstractDomain::refineBranch(pred_s, rhs, lhs, values[&rhs], getAbstractValue(lhs));
         }
 
         // The control flow is like this so that the previous ifs do not conflict with one another.
