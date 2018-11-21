@@ -2,8 +2,8 @@
 
 namespace pcpo {
 
-SimpleInterval::SimpleInterval(llvm::Constant& constant) {
-    if (llvm::ConstantInt* c = llvm::dyn_cast<llvm::ConstantInt>(&constant)) {
+SimpleInterval::SimpleInterval(llvm::Constant const& constant) {
+    if (llvm::ConstantInt const* c = llvm::dyn_cast<llvm::ConstantInt>(&constant)) {
         state = NORMAL;
         begin = c->getValue();
         end = c->getValue();
@@ -11,8 +11,8 @@ SimpleInterval::SimpleInterval(llvm::Constant& constant) {
     }
     // Depending on how you want to handle undef values, you might want to consider them as any
     // value (e.g. 0).
-    //     if (llvm::UndefValue* c = llvm::dyn_cast<llvm::UndefValue>(&constant)) {
-    //         if (llvm::IntegerType* ty = llvm::dyn_cast<llvm::IntegerType>(c->getType())) {
+    //     if (llvm::UndefValue const* c = llvm::dyn_cast<llvm::UndefValue>(&constant)) {
+    //         if (llvm::IntegerType const* ty = llvm::dyn_cast<llvm::IntegerType>(c->getType())) {
     //             state = NORMAL;
     //             begin = APInt::getNullValue(ty->getBitWidth());
     //             end = begin;
@@ -100,12 +100,12 @@ static SimpleInterval _icmp_shift(SimpleInterval a) {
 }
 
 SimpleInterval SimpleInterval::interpret(
-    llvm::Instruction& inst, std::vector<SimpleInterval> const& operands
+    llvm::Instruction const& inst, std::vector<SimpleInterval> const& operands
 ) {    
     if (operands.size() != 2) return SimpleInterval {true};
 
     // We only deal with integer types
-    llvm::IntegerType* type = llvm::dyn_cast<llvm::IntegerType>(inst.getType());
+    llvm::IntegerType const* type = llvm::dyn_cast<llvm::IntegerType>(inst.getType());
     if (not type) return SimpleInterval {true};
     
     unsigned bitWidth = inst.getOperand(0)->getType()->getIntegerBitWidth();
@@ -124,7 +124,7 @@ SimpleInterval SimpleInterval::interpret(
     // careful analysis of which conditions lead to a basic block, deriving upper and lower bounds
     // on the variables involved. However, always getting top for the results annoyed me. (In
     // theory, someone could also do computations with them.
-    if (llvm::ICmpInst* icmp = llvm::dyn_cast<llvm::ICmpInst>(&inst)) {
+    if (llvm::ICmpInst const* icmp = llvm::dyn_cast<llvm::ICmpInst>(&inst)) {
         bool f = a.isBottom() or b.isBottom();
         bool never_true  = f or _refine_branch(icmp->getPredicate(),        a, b).isBottom();
         bool never_false = f or _refine_branch(icmp->getInversePredicate(), a, b).isBottom();
@@ -165,7 +165,7 @@ SimpleInterval SimpleInterval::interpret(
 }
 
 SimpleInterval SimpleInterval::refine_branch(
-    llvm::CmpInst::Predicate pred, llvm::Value& lhs, llvm::Value& rhs,
+    llvm::CmpInst::Predicate pred, llvm::Value const& lhs, llvm::Value const& rhs,
     SimpleInterval a1, SimpleInterval a2
 ) {
     // Here we do all the checks for top and bottom, so that the code below does not have to deal
@@ -173,7 +173,7 @@ SimpleInterval SimpleInterval::refine_branch(
     if (a1.isBottom() || a2.isBottom()) return SimpleInterval {};
 
     // We only deal with integer types
-    llvm::IntegerType* type = llvm::dyn_cast<llvm::IntegerType>(lhs.getType());
+    llvm::IntegerType const* type = llvm::dyn_cast<llvm::IntegerType>(lhs.getType());
     if (not type) return SimpleInterval {true};
     
     unsigned bitWidth = type->getBitWidth();
@@ -468,7 +468,7 @@ SimpleInterval SimpleInterval::_upperBound(SimpleInterval o) const {
         if (_innerLe(o.begin, o.end)) {
             return SimpleInterval {begin, end};
         } else {
-            return SimpleInterval {true};
+            return SimpleInterval {true}._makeTopInterval(begin.getBitWidth());
         }
     }
 }

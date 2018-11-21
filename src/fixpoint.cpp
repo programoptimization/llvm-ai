@@ -15,8 +15,6 @@
 
 namespace pcpo {
 
-// @Cleanup: getAnalysisUsage ??
-
 static llvm::RegisterPass<AbstractInterpretationPass> Y("painpass", "AbstractInterpretation Pass");
 
 char AbstractInterpretationPass::ID;
@@ -42,14 +40,14 @@ public:
 
     // Initialise the state to the incoming state of the function. This should do something like
     // assuming the parameters can be anything.
-    explicit AbstractStateDummy(llvm::Function& f) {}
+    explicit AbstractStateDummy(llvm::Function const& f) {}
 
     // Applies the changes needed to reflect executing the instructions in the basic block. Before
     // this operation is called, the state is the one upon entering bb, afterwards it should be (an
     // upper bound of) the state leaving the basic block.
     //  predecessors contains the outgoing state for all the predecessors, in the same order as they
     // are listed in llvm::predecessors(bb).
-    void apply(llvm::BasicBlock& bb, std::vector<AbstractStateDummy> const& predecessors) {};
+    void apply(llvm::BasicBlock const& bb, std::vector<AbstractStateDummy> const& predecessors) {};
 
     // This 'merges' two states, which is the operation we do fixpoint iteration over. Currently,
     // there are three possibilities for op:
@@ -71,12 +69,12 @@ public:
     // 'towards'. Starting with the state when exiting from, this should compute (an upper bound of)
     // the possible values that would reach the block towards. Doing nothing thus is a valid
     // implementation.
-    void branch(llvm::BasicBlock& from, llvm::BasicBlock& towards) {};
+    void branch(llvm::BasicBlock const& from, llvm::BasicBlock const& towards) {};
 
     // Functions to generate the debug output. printIncoming should output the state as of entering
     // the basic block, printOutcoming the state when leaving it.
-    void printIncoming(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {};
-    void printOutgoing(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {};
+    void printIncoming(llvm::BasicBlock const& bb, llvm::raw_ostream& out, int indentation = 0) const {};
+    void printOutgoing(llvm::BasicBlock const& bb, llvm::raw_ostream& out, int indentation = 0) const {};
 };
 
 // Run the simple fixpoint algorithm. AbstractState should implement the interface documented in
@@ -88,31 +86,31 @@ public:
 //  Tip: Look at a diff of fixpoint.cpp and fixpoint_widening.cpp with a visual diff tool (I
 // recommend Meld.)
 template <typename AbstractState>
-void executeFixpointAlgorithm(llvm::Module& M) {
+void executeFixpointAlgorithm(llvm::Module const& M) {
     constexpr int iterations_max = 1000;
 
     // A node in the control flow graph, i.e. a basic block. Here, we need a bit of additional data
     // per node to execute the fixpoint algorithm.
     struct Node {
         int id;
-        llvm::BasicBlock* bb;
+        llvm::BasicBlock const* bb;
         AbstractState state;
         bool update_scheduled = false; // Whether the node is already in the worklist
 
         // If this is set, the algorithm will add the initial values from the parameters of the
         // function to the incoming values, which is the correct thing to do for initial basic
         // blocks.
-        llvm::Function* func_entry = nullptr;
+        llvm::Function const* func_entry = nullptr;
     };
 
     std::vector<Node> nodes;
-    std::unordered_map<llvm::BasicBlock*, int> nodeIdMap; // Maps basic blocks to the ids of their corresponding nodes
+    std::unordered_map<llvm::BasicBlock const*, int> nodeIdMap; // Maps basic blocks to the ids of their corresponding nodes
     std::vector<int> worklist; // Contains the ids of nodes that need to be processed
 
     // TODO: Check what this does for release clang, probably write out a warning
     dbgs(1) << "Initialising fixpoint algorithm, collecting basic blocks\n";
 
-    for (llvm::Function& f: M.functions()) {
+    for (llvm::Function const& f: M.functions()) {
         // Check for external (i.e. declared but not defined) functions
         if (f.empty()) {
             dbgs(1) << "  Function " << f.getName() << " is external, skipping...";
@@ -120,7 +118,7 @@ void executeFixpointAlgorithm(llvm::Module& M) {
         }
 
         // Register basic blocks
-        for (llvm::BasicBlock& bb: f) {
+        for (llvm::BasicBlock const& bb: f) {
             dbgs(1) << "  Found basic block " << bb.getName() << '\n';
 
             Node node;
@@ -163,7 +161,7 @@ void executeFixpointAlgorithm(llvm::Module& M) {
 
         // Collect the predecessors
         std::vector<AbstractState> predecessors;
-        for (llvm::BasicBlock* bb: llvm::predecessors(node.bb)) {
+        for (llvm::BasicBlock const* bb: llvm::predecessors(node.bb)) {
             dbgs(3) << "    Merging basic block " << bb->getName() << '\n';
 
             AbstractState state_branched {nodes[nodeIdMap[bb]].state};
@@ -191,7 +189,7 @@ void executeFixpointAlgorithm(llvm::Module& M) {
                 << (llvm::succ_size(node.bb) != 1 ? " successors\n" : " successor\n");
 
         // Something changed and we will need to update the successors
-        for (llvm::BasicBlock* succ_bb: llvm::successors(node.bb)) {
+        for (llvm::BasicBlock const* succ_bb: llvm::successors(node.bb)) {
             Node& succ = nodes[nodeIdMap[succ_bb]];
             if (not succ.update_scheduled) {
                 worklist.push_back(succ.id);

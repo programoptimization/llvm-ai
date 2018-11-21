@@ -21,12 +21,12 @@ public:
 public:
     // The AbstractDomain interface
     SimpleInterval(bool isTop = false): state{isTop ? TOP : BOTTOM} {}
-    SimpleInterval(llvm::Constant& constant);
+    SimpleInterval(llvm::Constant const& constant);
     static SimpleInterval interpret(
-        llvm::Instruction& inst, std::vector<SimpleInterval> const& operands
+        llvm::Instruction const& inst, std::vector<SimpleInterval> const& operands
     );
     static SimpleInterval refine_branch(
-        llvm::CmpInst::Predicate pred, llvm::Value& lhs, llvm::Value& rhs,
+        llvm::CmpInst::Predicate pred, llvm::Value const& lhs, llvm::Value const& rhs,
         SimpleInterval a, SimpleInterval b
     );
     static SimpleInterval merge(Merge_op::Type op, SimpleInterval a, SimpleInterval b);
