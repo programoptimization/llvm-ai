@@ -80,7 +80,7 @@ void executeFixpointAlgorithmWidening(llvm::Module& M) {
         // each loop, as that is enough to guarantee fast termination.)
         llvm::LoopInfoBase<llvm::BasicBlock, llvm::Loop> loopInfoBase;
         loopInfoBase.analyze(llvm::DominatorTree {f});
-        for (llvm::Loop* loop: loopInfoBase.getLoopsInPreorder()) {
+        for (llvm::Loop* loop: loopInfoBase) {
             // We want to widen only the conditions of the loops
             nodes[nodeIdMap.at(loop->getHeader())].should_widen = true;
             dbgs(1) << "  Enabling widening for basic block " << loop->getHeader()->getName() << '\n';
