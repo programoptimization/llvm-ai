@@ -27,7 +27,8 @@ public:
     // Initialise from a constant
     AbstractDomainDummy(llvm::Constant& constant): AbstractDomainDummy(true) {}
 
-    // @Cleanup Documentation
+    // This method does the actual abstract interpretation by executing the instruction on the
+    // abstract domain, return (an upper bound of) the result. Relevant instructions are mostly the arithmetic ones (like add, sub, mul, etc.). Comparisons are handled mostly using refine_branch, however you can still give bounds on their results here. (They just are not as useful for branching.) 
     static AbstractDomainDummy interpret (
         llvm::Instruction& inst, std::vector<AbstractDomainDummy> const& operands
     ) { return AbstractDomainDummy(true); }
@@ -52,7 +53,9 @@ public:
         AbstractDomainDummy a, AbstractDomainDummy b
     ) { return a; }
 
-    // @Cleanup Documentation
+    // This mirrors the AbstractState::merge method (documented in AbstractStateDummy), so please
+    // refer to that for a description of the different operations. Instead of modifying the object,
+    // this returns a new one containing the result of the operation.
     static AbstractDomainDummy merge(Merge_op::Type op, AbstractDomainDummy a, AbstractDomainDummy b)
         { return AbstractDomainDummy(true); }
 };
@@ -290,7 +293,11 @@ public:
             return AbstractDomain {*c};
         } else if (values.count(&value)) {
             return values.at(&value);
+        } else if (isBottom) {
+            // If we are at bottom, there are no values
+            return AbstractDomain {};
         } else {
+            // This branch should only catch 'weird' values, like things we are not handling
             return AbstractDomain {true};
         }
     }

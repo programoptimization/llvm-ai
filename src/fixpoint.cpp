@@ -225,5 +225,10 @@ bool AbstractInterpretationPass::runOnModule(llvm::Module& M) {
     return false;
 }
 
+
+void AbstractInterpretationPass::getAnalysisUsage(llvm::AnalysisUsage& info) const {
+    info.setPreservesAll();
+}
+
 } /* end of namespace pcpo */
 
