@@ -8,15 +8,28 @@
 
 namespace pcpo {
 
+// An AbstractDomain using intervals to represent integer values. The intervals are either bottom,
+// top, or have to values representing the beginning and end, both inclusive. This means that there
+// would be many different representations for top, besides the canonical one where state == T.
+// However, all of these are usually disallowed. (Internally, we temporarily switch to the [0, -1]
+// representation of top as that makes calculations easier. See _makeTopInterval and _makeTopSpecial
+// about that.)
+//  See AbstractDomainDummy in value_set.h for documentation of the AbstractDomain interface this
+// class implements.
+//  There are tests for this class! Look at the run.py script on how to run these. They do simple
+// fuzzing of inputs, which is quite effective to detect correctness errors. If you implement an
+// operation or modify an existing one, you can add it in there. Also, if you happen to discover a
+// bug in the existing code (completely implausible, mind you, but just hypothetically), it would be
+// nice to add a test for that behaviour into the testing code.
 class SimpleInterval {
     using APInt = llvm::APInt;
 public:
     enum State: char {
-        // Do not change these values.
-        INVALID, BOTTOM = 1, TOP = 2, NORMAL = 4
+        // Do not change these values. They are used by operator<=.
+        INVALID, BOTTOM = 1, NORMAL = 2, TOP = 4
     };
-    APInt begin, end;
     char state;
+    APInt begin, end;
     
 public:
     // The AbstractDomain interface
@@ -25,7 +38,7 @@ public:
     static SimpleInterval interpret(
         llvm::Instruction const& inst, std::vector<SimpleInterval> const& operands
     );
-    static SimpleInterval refine_branch(
+    static SimpleInterval refineBranch(
         llvm::CmpInst::Predicate pred, llvm::Value const& lhs, llvm::Value const& rhs,
         SimpleInterval a, SimpleInterval b
     );
@@ -39,12 +52,14 @@ public:
 
     bool operator==(SimpleInterval other) const;
     bool operator!=(SimpleInterval other) const {return !(*this == other);}
+    bool operator<= (SimpleInterval o) const;
     
     bool isTop() const { return state == TOP; };
     bool isBottom() const { return state == BOTTOM; };
     
     bool contains(APInt value) const;
 
+    // You can call this from your debugger
     void printOut() const;
 
     // These are internal functions that, generally speaking, do not deal with bottom and top. Also,
@@ -64,7 +79,7 @@ public:
     SimpleInterval _widen(SimpleInterval o) const;
     SimpleInterval _narrow(SimpleInterval o) const;
 
-    static SimpleInterval _refine_branch(
+    static SimpleInterval _refineBranch(
         llvm::CmpInst::Predicate pred, SimpleInterval a, SimpleInterval b
     );
     
@@ -73,9 +88,7 @@ public:
     APInt _smax() const;
     APInt _smin() const;
     APInt _smaxabsneg() const;
-    bool _innerLe(APInt a, APInt b) const;
-    
-    bool operator<= (SimpleInterval o) const;
+    bool _innerLe(APInt a, APInt b) const;    
 };
 
 llvm::raw_ostream& operator<<(llvm::raw_ostream& os, SimpleInterval a);
