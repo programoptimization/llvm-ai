@@ -25,15 +25,18 @@ public:
     AbstractDomainDummy(AbstractDomainDummy const&) = default;
     
     // Initialise from a constant
-    AbstractDomainDummy(llvm::Constant& constant): AbstractDomainDummy(true) {}
+    AbstractDomainDummy(llvm::Constant const& constant): AbstractDomainDummy(true) {}
 
     // This method does the actual abstract interpretation by executing the instruction on the
-    // abstract domain, return (an upper bound of) the result. Relevant instructions are mostly the arithmetic ones (like add, sub, mul, etc.). Comparisons are handled mostly using refine_branch, however you can still give bounds on their results here. (They just are not as useful for branching.) 
+    // abstract domain, return (an upper bound of) the result. Relevant instructions are mostly the
+    // arithmetic ones (like add, sub, mul, etc.). Comparisons are handled mostly using
+    // refine_branch, however you can still give bounds on their results here. (They just are not as
+    // useful for branching.) Control-flowy instructions, like phi nodes, are also handled above.
     static AbstractDomainDummy interpret (
-        llvm::Instruction& inst, std::vector<AbstractDomainDummy> const& operands
+        llvm::Instruction const& inst, std::vector<AbstractDomainDummy> const& operands
     ) { return AbstractDomainDummy(true); }
 
-    // @Cleanup Documentation
+    // Return whether the two values represent the same thing
     bool operator== (AbstractDomainDummy o) const {
         assert(false); return false;
     }
@@ -49,7 +52,7 @@ public:
     //     1. c <= a
     //     2. For all x in a, y in b with x~y we have x in c.
     static AbstractDomainDummy refine_branch (
-        llvm::CmpInst::Predicate pred, llvm::Value& lhs, llvm::Value& rhs,
+        llvm::CmpInst::Predicate pred, llvm::Value const& lhs, llvm::Value const& rhs,
         AbstractDomainDummy a, AbstractDomainDummy b
     ) { return a; }
 
@@ -60,12 +63,14 @@ public:
         { return AbstractDomainDummy(true); }
 };
 
+// Return a human readable version of the predicate. Because I have to differentiate between signed
+// and unsigned, there is a 'u' or 's' prefix, so 'u<=' means 'unsigned lesser than or equal'.
 char const* get_predicate_name(llvm::CmpInst::Predicate pred);
 
 template <typename AbstractDomain>
 class AbstractStateValueSet {
 public:
-    std::unordered_map<llvm::Value*, AbstractDomain> values;
+    std::unordered_map<llvm::Value const*, AbstractDomain> values;
 
     // We need an additional boolean, as there is a difference between an empty AbstractState and
     // one that is bottom.
@@ -75,38 +80,37 @@ public:
     AbstractStateValueSet() = default;
     AbstractStateValueSet(AbstractStateValueSet const& state) = default;
 
-    explicit AbstractStateValueSet(llvm::Function& f) {
+    explicit AbstractStateValueSet(llvm::Function const& f) {
         // We need to initialise the arguments to T
-        for (llvm::Argument& arg: f.args()) {
+        for (llvm::Argument const& arg: f.args()) {
             values[&arg] = AbstractDomain {true};
         }
         isBottom = false;
     }
 
-    void apply(llvm::BasicBlock& bb, std::vector<AbstractStateValueSet> const& pred_values) {
+    void apply(llvm::BasicBlock const& bb, std::vector<AbstractStateValueSet> const& pred_values) {
         if (isBottom) {
             dbgs(3) << "    Basic block is unreachable, everything is bottom\n";
-
             return;
         }
         
         std::vector<AbstractDomain> operands;
 
         // Go through each instruction of the basic block and apply it to the state
-        for (llvm::Instruction& inst: bb) {
+        for (llvm::Instruction const& inst: bb) {
             // If the result of the instruction is not used, there is no reason to compute
             // it. (There are no side-effects in LLVM IR. (I hope.))
             if (inst.use_empty()) continue;
 
             AbstractDomain inst_result;
             
-            if (llvm::PHINode* phi = llvm::dyn_cast<llvm::PHINode>(&inst)) {
+            if (llvm::PHINode const* phi = llvm::dyn_cast<llvm::PHINode>(&inst)) {
                 // Phi nodes are handled here, to get the precise values of the predecessors
                 
                 for (unsigned i = 0; i < phi->getNumIncomingValues(); ++i) {
                     // Find the predecessor corresponding to the block of the phi node
                     unsigned block = 0;
-                    for (llvm::BasicBlock* pred_bb: llvm::predecessors(&bb)) {
+                    for (llvm::BasicBlock const* pred_bb: llvm::predecessors(&bb)) {
                         if (pred_bb == phi->getIncomingBlock(i)) break;
                         ++block;
                     }
@@ -118,7 +122,7 @@ public:
                     operands.push_back(pred_value); // Keep the debug output happy
                 }
             } else {
-                for (llvm::Value* value: inst.operand_values()) {
+                for (llvm::Value const* value: inst.operand_values()) {
                     operands.push_back(getAbstractValue(*value));
                 }
 
@@ -130,7 +134,7 @@ public:
 
             dbgs(3).indent(2) << inst << " // " << values.at(&inst) << ", args ";
             {int i = 0;
-            for (llvm::Value* value: inst.operand_values()) {
+            for (llvm::Value const* value: inst.operand_values()) {
                 if (i) dbgs(3) << ", ";
                 if (value->getName().size()) dbgs(3) << '%' << value->getName() << " = ";
                 dbgs(3) << operands[i];
@@ -150,7 +154,7 @@ public:
             isBottom = false;
         }
         
-        for (std::pair<llvm::Value*, AbstractDomain> i: other.values) {
+        for (std::pair<llvm::Value const*, AbstractDomain> i: other.values) {
             // If our value did not exist before, it will be implicitly initialised as bottom,
             // which works just fine.
             AbstractDomain v = AbstractDomain::merge(op, values[i.first], i.second);
@@ -172,12 +176,12 @@ public:
         return changed;
     }
     
-    void branch(llvm::BasicBlock& from, llvm::BasicBlock& towards) {
-        llvm::Instruction* terminator = from.getTerminator();
+    void branch(llvm::BasicBlock const& from, llvm::BasicBlock const& towards) {
+        llvm::Instruction const* terminator = from.getTerminator();
         assert(terminator /* from is not a well-formed basic block! */);
         assert(terminator->isTerminator());
 
-        llvm::BranchInst* branch = llvm::dyn_cast<llvm::BranchInst>(terminator);
+        llvm::BranchInst const* branch = llvm::dyn_cast<llvm::BranchInst>(terminator);
 
         // If the terminator is not a simple branch, we are not interested
         if (not branch) return;
@@ -185,9 +189,9 @@ public:
         // In the case of an unconditional branch, there is nothing to do
         if (branch->isUnconditional()) return;
 
-        llvm::Value& condition = *branch->getCondition();
+        llvm::Value const& condition = *branch->getCondition();
 
-        llvm::ICmpInst* cmp = llvm::dyn_cast<llvm::ICmpInst>(&condition);
+        llvm::ICmpInst const* cmp = llvm::dyn_cast<llvm::ICmpInst>(&condition);
 
         // We only deal with integer compares here. If you want to do floating points operations as
         // well, you need to adjust the following lines of code a bit.
@@ -208,8 +212,8 @@ public:
         dbgs(3) << "      Detected branch from " << from.getName() << " towards " << towards.getName()
                 << " using compare in %" << cmp->getName() << '\n';
         
-        llvm::Value& lhs = *cmp->getOperand(0);
-        llvm::Value& rhs = *cmp->getOperand(1);
+        llvm::Value const& lhs = *cmp->getOperand(0);
+        llvm::Value const& rhs = *cmp->getOperand(1);
 
         AbstractDomain lhs_new;
         AbstractDomain rhs_new;
@@ -256,15 +260,15 @@ public:
         checkForBottom(6);
     }
 
-    void printIncoming(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {
+    void printIncoming(llvm::BasicBlock const& bb, llvm::raw_ostream& out, int indentation = 0) const {
         // @Speed: This is quadratic, could be linear
         bool nothing = true;
-        for (std::pair<llvm::Value*, AbstractDomain> const& i: values) {
+        for (std::pair<llvm::Value const*, AbstractDomain> const& i: values) {
             bool read    = false;
             bool written = false;
-            for (llvm::Instruction& inst: bb) {
+            for (llvm::Instruction const& inst: bb) {
                 if (&inst == i.first) written = true;
-                for (llvm::Value* v: inst.operand_values()) {
+                for (llvm::Value const* v: inst.operand_values()) {
                     if (v == i.first) read = true;
                 }
             }
@@ -278,7 +282,7 @@ public:
             out.indent(indentation) << "<nothing>\n";
         }
     }
-    void printOutgoing(llvm::BasicBlock& bb, llvm::raw_ostream& out, int indentation = 0) const {
+    void printOutgoing(llvm::BasicBlock const& bb, llvm::raw_ostream& out, int indentation = 0) const {
         for (auto const& i: values) {
             out.indent(indentation) << '%' << i.first->getName() << " = " << i.second << '\n';
         }
@@ -288,8 +292,8 @@ public:
     };
     
 public:
-    AbstractDomain getAbstractValue(llvm::Value& value) const {
-        if (llvm::Constant* c = llvm::dyn_cast<llvm::Constant>(&value)) {
+    AbstractDomain getAbstractValue(llvm::Value const& value) const {
+        if (llvm::Constant const* c = llvm::dyn_cast<llvm::Constant>(&value)) {
             return AbstractDomain {*c};
         } else if (values.count(&value)) {
             return values.at(&value);
