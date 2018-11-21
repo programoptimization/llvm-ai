@@ -126,8 +126,8 @@ SimpleInterval SimpleInterval::interpret(
     // theory, someone could also do computations with them.
     if (llvm::ICmpInst const* icmp = llvm::dyn_cast<llvm::ICmpInst>(&inst)) {
         bool f = a.isBottom() or b.isBottom();
-        bool never_true  = f or _refine_branch(icmp->getPredicate(),        a, b).isBottom();
-        bool never_false = f or _refine_branch(icmp->getInversePredicate(), a, b).isBottom();
+        bool never_true  = f or _refineBranch(icmp->getPredicate(),        a, b).isBottom();
+        bool never_false = f or _refineBranch(icmp->getInversePredicate(), a, b).isBottom();
         if (never_true and never_false) {
             return SimpleInterval {};
         } else if (never_true) {
@@ -138,7 +138,10 @@ SimpleInterval SimpleInterval::interpret(
             return SimpleInterval {true};
         }
     }
-    
+
+    // We need to check for bottom after determining the type of the operation, because some weird
+    // ones may actually return values even of bottom. (E.g. phi nodes, though those are handled in
+    // the layer above.)
 
 #define DO_BINARY_OV(x)                                                 \
     case llvm::Instruction::x:                                          \
@@ -164,7 +167,7 @@ SimpleInterval SimpleInterval::interpret(
 #undef DO_BINARY
 }
 
-SimpleInterval SimpleInterval::refine_branch(
+SimpleInterval SimpleInterval::refineBranch(
     llvm::CmpInst::Predicate pred, llvm::Value const& lhs, llvm::Value const& rhs,
     SimpleInterval a1, SimpleInterval a2
 ) {
@@ -182,10 +185,10 @@ SimpleInterval SimpleInterval::refine_branch(
     a1 = a1._makeTopInterval(bitWidth);
     a2 = a2._makeTopInterval(bitWidth);
 
-    return _refine_branch(pred, a1, a2)._makeTopSpecial();
+    return _refineBranch(pred, a1, a2)._makeTopSpecial();
 }
 
-SimpleInterval SimpleInterval::_refine_branch(
+SimpleInterval SimpleInterval::_refineBranch(
     llvm::CmpInst::Predicate pred, SimpleInterval a1, SimpleInterval a2
 ) {
     using Predicate = llvm::CmpInst::Predicate;
@@ -201,10 +204,10 @@ SimpleInterval SimpleInterval::_refine_branch(
     case Predicate::ICMP_UGT: return _icmp_inv(_icmp_ult_val(_icmp_inv(a1), ~a2._umin()));
 
     // We can reduce to the unsigned case by adding the smallest negative value. (So 1 << n-1)
-    case Predicate::ICMP_SLE: return _icmp_shift(_refine_branch(Predicate::ICMP_ULE, _icmp_shift(a1), _icmp_shift(a2)));
-    case Predicate::ICMP_SLT: return _icmp_shift(_refine_branch(Predicate::ICMP_ULT, _icmp_shift(a1), _icmp_shift(a2)));
-    case Predicate::ICMP_SGE: return _icmp_shift(_refine_branch(Predicate::ICMP_UGE, _icmp_shift(a1), _icmp_shift(a2)));
-    case Predicate::ICMP_SGT: return _icmp_shift(_refine_branch(Predicate::ICMP_UGT, _icmp_shift(a1), _icmp_shift(a2)));
+    case Predicate::ICMP_SLE: return _icmp_shift(_refineBranch(Predicate::ICMP_ULE, _icmp_shift(a1), _icmp_shift(a2)));
+    case Predicate::ICMP_SLT: return _icmp_shift(_refineBranch(Predicate::ICMP_ULT, _icmp_shift(a1), _icmp_shift(a2)));
+    case Predicate::ICMP_SGE: return _icmp_shift(_refineBranch(Predicate::ICMP_UGE, _icmp_shift(a1), _icmp_shift(a2)));
+    case Predicate::ICMP_SGT: return _icmp_shift(_refineBranch(Predicate::ICMP_UGT, _icmp_shift(a1), _icmp_shift(a2)));
 
     // This function is supposed to refine a1, so returning that is always fine
     default: return a1;
@@ -236,10 +239,9 @@ bool SimpleInterval::operator==(SimpleInterval o) const {
 }
 
 bool SimpleInterval::contains(APInt value) const {
-    assert(value.getBitWidth() == begin.getBitWidth());
-
     if (state != NORMAL) return state == TOP;
 
+    assert(value.getBitWidth() == begin.getBitWidth());
     return _innerLe(value, end);
 }
 
