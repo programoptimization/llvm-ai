@@ -17,6 +17,9 @@ build/
 /Build
 /.build
 
+# env config file
+.config
+
 # KDevelop
 /*.kdev4
 
