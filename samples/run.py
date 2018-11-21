@@ -5,12 +5,20 @@ import os.path
 import os
 
 # SET YOUR PATHS HERE
-LLVM_PATH = "/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/cmake-build-debug"
-CLANG_PATH = LLVM_PATH
+#LLVM_PATH = "/home/thomas/Dokumente/Nextcloud/Uni/05/Praktikum_LLVM/llvm-7.0.0.src/cmake-build-debug"
+#CLANG_PATH = LLVM_PATH
+
+if not os.path.isfile("../.config"):
+    print("No config file was found. Pleas run config.py first!")
+    exit(-1)
+
+config_file = open("../.config", "r")
+lines = config_file.readlines()
+LLVM_PATH = lines[1].strip()
+CLANG_PATH = lines[2].strip()
 
 #TODO:
-#test if every necessary programs are compiled (opt, clang, ...)
-#work with config file
+#test if every necessary program is compiled (opt, clang, ...)
 
 #do not modify
 PASS_LIB = LLVM_PATH + "/lib/llvm-pain.so"
@@ -88,7 +96,7 @@ def getHumanReadableCMD(filename):
 
 def getRunPassCMD(filename, show_output):
     ret =  LLVM_PATH + '/bin/opt -load "' + PASS_LIB + '" -' + PASS + ' -S -o /dev/null build/' + filename + '-opt.bc'
-    if(show_output == None):
+    if(not show_output):
         return ret +' > build/' + filename + '.out 2>&1'
     else:
         return ret
