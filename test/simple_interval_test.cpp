@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cstdint>
 
-#include "abstract_domain/SimpleInterval.h"
+#include "simple_interval.h"
 
 // Standard integer types
 using s64 = std::int64_t;
@@ -28,48 +28,29 @@ u64 rand64() {
 }
 
 void testSimpleDomain(u32 w, u32 iters, u64* errs) {
+    // The test just does all the operations with random values and checks whether it outputs
+    // something sensible. Of course, this cannot check whether something accidentally becomes top.
+    
+    using APInt = llvm::APInt;
+    
     std::fprintf(stderr, "Checking width %2d using %6d iterations, rand_state = 0x%lxull\n", (int)w, (int)iters, rand_state);
 
     u64 mask = ((u64)-1) >> (64 - w);
     
-    SimpleInterval a (true, w);
-    SimpleInterval b (true, w);
-    APInt x (w, 0), y (w, 0), z (w, 0);
+    SimpleInterval a {true};
+    SimpleInterval b {true};
+    APInt x {w, 0}, y {w, 0}, z {w, 0};
 
-    SimpleInterval add0 (true, w);
-    SimpleInterval add1 (true, w);
-    SimpleInterval add2 (true, w);
-    SimpleInterval sub0 (true, w);
-    SimpleInterval sub1 (true, w);
-    SimpleInterval sub2 (true, w);
-    SimpleInterval mul0 (true, w);
-    SimpleInterval mul1 (true, w);
-    SimpleInterval mul2 (true, w);
-    SimpleInterval udiv (true, w);
-    SimpleInterval urem (true, w);
-    SimpleInterval srem (true, w);
-    SimpleInterval lub (true, w);
-    SimpleInterval glb (true, w);
-    SimpleInterval aeq (true, w);
-    SimpleInterval ane (true, w);
-    SimpleInterval aslt (true, w);
-    SimpleInterval asle (true, w);
-    SimpleInterval asge (true, w);
-    SimpleInterval asgt (true, w);
-    SimpleInterval ault (true, w);
-    SimpleInterval aule (true, w);
-    SimpleInterval auge (true, w);
-    SimpleInterval augt (true, w);
-    SimpleInterval beq (true, w);
-    SimpleInterval bne (true, w);
-    SimpleInterval bslt (true, w);
-    SimpleInterval bsle (true, w);
-    SimpleInterval bsge (true, w);
-    SimpleInterval bsgt (true, w);
-    SimpleInterval bult (true, w);
-    SimpleInterval bule (true, w);
-    SimpleInterval buge (true, w);
-    SimpleInterval bugt (true, w);
+    SimpleInterval a_;
+    SimpleInterval b_;
+
+    SimpleInterval add0, add1, add2, sub0, sub1;
+    SimpleInterval sub2, mul0, mul1, mul2, udiv;
+    SimpleInterval urem, srem, lub, glb;
+    SimpleInterval aeq, ane, aslt, asle, asge;
+    SimpleInterval asgt, ault, aule, auge, augt;
+    SimpleInterval beq, bne, bslt, bsle, bsge;
+    SimpleInterval bsgt, bult, bule, buge, bugt;
     
     for (s64 i = 0; i < iters; ++i) {
         const s64 freq = 0x7ff;
@@ -86,22 +67,20 @@ void testSimpleDomain(u32 w, u32 iters, u64* errs) {
         // Ensure that the interval is not accidentally top
         a_end += a_beg == ((a_end+1) & mask);
         b_end += b_beg == ((b_end+1) & mask);
-        
-        a.begin = a_beg;
-        a.end = a_end;
-        b.begin = b_beg;
-        b.end = b_end;
+
+        a = SimpleInterval {APInt {w, a_beg}, APInt {w, a_end}};
+        b = SimpleInterval {APInt {w, b_beg}, APInt {w, b_end}};
 
         // Set to bottom if last 8 bits are 0
-        a.isBot = !(flags & 0xff);
-        b.isBot = !(flags & 0xff << 8);
+        if (!(flags      & 0x7f)) a = {!!(flags      & 0xff)};
+        if (!(flags >> 8 & 0x7f)) b = {!!(flags >> 8 & 0xff)};
 
-        // Clear begin and end if last 7 bits are 0, so if we end in 0x80 we get top instead of bottom
-        a.begin &= !(flags & 0x7f) - 1;
-        a.end |= -!(flags & 0x7f);
-        b.begin &= !(flags & 0x7f << 8) - 1;
-        b.end |= -!(flags & 0x7f << 8);
-
+        a_beg &= ( !(flags & 0x7f) - 1     ) & mask;
+        a_end |= (-!(flags & 0x7f)         ) & mask;
+        a_end -= ( !(flags & 0x7f)         ) & mask;
+        b_beg &= ( !(flags & 0x7f << 8) - 1) & mask;
+        b_end |= (-!(flags & 0x7f << 8)    ) & mask;
+        b_end -= ( !(flags & 0x7f << 8)    ) & mask;
 
         // Interval comparison test
         u64 i_flags = (a == b) | (a <= b) << 1 | (b <= a) << 2;
@@ -128,71 +107,64 @@ void testSimpleDomain(u32 w, u32 iters, u64* errs) {
         // One is bottom, cannot check operators
         if ((flags & 0xff) == 0 || (flags & 0xff00) == 0) continue;
 
-        add0 = a._add(b, false, false);
-        add1 = a._add(b, true, false);
-        add2 = a._add(b, false, true);
-        sub0 = a._sub(b, false, false);
-        sub1 = a._sub(b, true, false);
-        sub2 = a._sub(b, false, true);
-        mul0 = a._mul(b, false, false);
-        mul1 = a._mul(b, true, false);
-        mul2 = a._mul(b, false, true);
-        udiv = a._udiv(b);
-        urem = a._urem(b);
-        srem = a._srem(b);
-        lub  = a._leastUpperBound(b);
-        glb  = a._intersect(b);
-        SimpleInterval::_icmp(CmpInst::Predicate::ICMP_EQ, a, b,  &aeq , &beq );
-        SimpleInterval::_icmp(CmpInst::Predicate::ICMP_NE, a, b,  &ane , &bne );
-        SimpleInterval::_icmp(CmpInst::Predicate::ICMP_SLT, a, b, &aslt, &bslt);
-        SimpleInterval::_icmp(CmpInst::Predicate::ICMP_SLE, a, b, &asle, &bsle);
-        SimpleInterval::_icmp(CmpInst::Predicate::ICMP_SGE, a, b, &asge, &bsge);
-        SimpleInterval::_icmp(CmpInst::Predicate::ICMP_SGT, a, b, &asgt, &bsgt);
-        SimpleInterval::_icmp(CmpInst::Predicate::ICMP_ULT, a, b, &ault, &bult);
-        SimpleInterval::_icmp(CmpInst::Predicate::ICMP_ULE, a, b, &aule, &bule);
-        SimpleInterval::_icmp(CmpInst::Predicate::ICMP_UGE, a, b, &auge, &buge);
-        SimpleInterval::_icmp(CmpInst::Predicate::ICMP_UGT, a, b, &augt, &bugt);
+        a_ = a._makeTopInterval(w);
+        b_ = b._makeTopInterval(w);
+               
+        add0 = a_._Add(b_, false, false)._makeTopSpecial();
+        add1 = a_._Add(b_, true, false) ._makeTopSpecial();
+        add2 = a_._Add(b_, false, true) ._makeTopSpecial();
+        sub0 = a_._Sub(b_, false, false)._makeTopSpecial();
+        sub1 = a_._Sub(b_, true, false) ._makeTopSpecial();
+        sub2 = a_._Sub(b_, false, true) ._makeTopSpecial();
+        mul0 = a_._Mul(b_, false, false)._makeTopSpecial();
+        mul1 = a_._Mul(b_, true, false) ._makeTopSpecial();
+        mul2 = a_._Mul(b_, false, true) ._makeTopSpecial();
+        udiv = a_._UDiv(b_)             ._makeTopSpecial();
+        urem = a_._URem(b_)             ._makeTopSpecial();
+        srem = a_._SRem(b_)             ._makeTopSpecial();
+        lub  = a_._upperBound(b_)       ._makeTopSpecial();
+        glb  = a_._narrow(b_)           ._makeTopSpecial();
+        aeq  = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_EQ,  a_, b_)._makeTopSpecial();
+        ane  = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_NE,  a_, b_)._makeTopSpecial();
+        aslt = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_SLT, a_, b_)._makeTopSpecial();
+        asle = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_SLE, a_, b_)._makeTopSpecial();
+        asge = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_SGE, a_, b_)._makeTopSpecial();
+        asgt = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_SGT, a_, b_)._makeTopSpecial();
+        ault = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_ULT, a_, b_)._makeTopSpecial();
+        aule = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_ULE, a_, b_)._makeTopSpecial();
+        auge = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_UGE, a_, b_)._makeTopSpecial();
+        augt = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_UGT, a_, b_)._makeTopSpecial();
+        beq  = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_EQ,  b_, a_)._makeTopSpecial();
+        bne  = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_NE,  b_, a_)._makeTopSpecial();
+        bslt = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_SLT, b_, a_)._makeTopSpecial();
+        bsle = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_SLE, b_, a_)._makeTopSpecial();
+        bsge = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_SGE, b_, a_)._makeTopSpecial();
+        bsgt = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_SGT, b_, a_)._makeTopSpecial();
+        bult = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_ULT, b_, a_)._makeTopSpecial();
+        bule = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_ULE, b_, a_)._makeTopSpecial();
+        buge = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_UGE, b_, a_)._makeTopSpecial();
+        bugt = SimpleInterval::_refineBranch(llvm::CmpInst::Predicate::ICMP_UGT, b_, a_)._makeTopSpecial();
 
         // General sanity checks
         *errs += (a.isTop() || b.isTop()) && !add0.isTop();
         *errs += (a.isTop() || b.isTop()) && !sub0.isTop();
         *errs += (a.isTop() || b.isTop()) && !lub.isTop();
         *errs += (a.isTop() && b.isTop()) && !glb.isTop();
-        *errs += !add0.isBot && (w != add0.bitWidth || w != add0.begin.getBitWidth() || w != add0.end.getBitWidth());
-        *errs += !add1.isBot && (w != add1.bitWidth || w != add1.begin.getBitWidth() || w != add1.end.getBitWidth());
-        *errs += !add2.isBot && (w != add2.bitWidth || w != add2.begin.getBitWidth() || w != add2.end.getBitWidth());
-        *errs += !sub0.isBot && (w != sub0.bitWidth || w != sub0.begin.getBitWidth() || w != sub0.end.getBitWidth());
-        *errs += !sub1.isBot && (w != sub1.bitWidth || w != sub1.begin.getBitWidth() || w != sub1.end.getBitWidth());
-        *errs += !sub2.isBot && (w != sub2.bitWidth || w != sub2.begin.getBitWidth() || w != sub2.end.getBitWidth());
-        *errs += !mul0.isBot && (w != mul0.bitWidth || w != mul0.begin.getBitWidth() || w != mul0.end.getBitWidth());
-        *errs += !mul1.isBot && (w != mul1.bitWidth || w != mul1.begin.getBitWidth() || w != mul1.end.getBitWidth());
-        *errs += !mul2.isBot && (w != mul2.bitWidth || w != mul2.begin.getBitWidth() || w != mul2.end.getBitWidth());
-        *errs += !udiv.isBot && (w != udiv.bitWidth || w != udiv.begin.getBitWidth() || w != udiv.end.getBitWidth());
-        *errs += !urem.isBot && (w != urem.bitWidth || w != urem.begin.getBitWidth() || w != urem.end.getBitWidth());
-        *errs += !srem.isBot && (w != srem.bitWidth || w != srem.begin.getBitWidth() || w != srem.end.getBitWidth());
-        *errs += !lub .isBot && (w != lub .bitWidth || w != lub .begin.getBitWidth() || w != lub .end.getBitWidth());
-        *errs += !glb .isBot && (w != glb .bitWidth || w != glb .begin.getBitWidth() || w != glb .end.getBitWidth());
 
-        *errs += !aeq .isBot && (w != aeq .bitWidth || w != aeq .begin.getBitWidth() || w != aeq .end.getBitWidth());
-        *errs += !ane .isBot && (w != ane .bitWidth || w != ane .begin.getBitWidth() || w != ane .end.getBitWidth());
-        *errs += !aslt.isBot && (w != aslt.bitWidth || w != aslt.begin.getBitWidth() || w != aslt.end.getBitWidth());
-        *errs += !asle.isBot && (w != asle.bitWidth || w != asle.begin.getBitWidth() || w != asle.end.getBitWidth());
-        *errs += !asge.isBot && (w != asge.bitWidth || w != asge.begin.getBitWidth() || w != asge.end.getBitWidth());
-        *errs += !asgt.isBot && (w != asgt.bitWidth || w != asgt.begin.getBitWidth() || w != asgt.end.getBitWidth());
-        *errs += !ault.isBot && (w != ault.bitWidth || w != ault.begin.getBitWidth() || w != ault.end.getBitWidth());
-        *errs += !aule.isBot && (w != aule.bitWidth || w != aule.begin.getBitWidth() || w != aule.end.getBitWidth());
-        *errs += !auge.isBot && (w != auge.bitWidth || w != auge.begin.getBitWidth() || w != auge.end.getBitWidth());
-        *errs += !augt.isBot && (w != augt.bitWidth || w != augt.begin.getBitWidth() || w != augt.end.getBitWidth());
-        *errs += !beq .isBot && (w != beq .bitWidth || w != beq .begin.getBitWidth() || w != beq .end.getBitWidth());
-        *errs += !bne .isBot && (w != bne .bitWidth || w != bne .begin.getBitWidth() || w != bne .end.getBitWidth());
-        *errs += !bslt.isBot && (w != bslt.bitWidth || w != bslt.begin.getBitWidth() || w != bslt.end.getBitWidth());
-        *errs += !bsle.isBot && (w != bsle.bitWidth || w != bsle.begin.getBitWidth() || w != bsle.end.getBitWidth());
-        *errs += !bsge.isBot && (w != bsge.bitWidth || w != bsge.begin.getBitWidth() || w != bsge.end.getBitWidth());
-        *errs += !bsgt.isBot && (w != bsgt.bitWidth || w != bsgt.begin.getBitWidth() || w != bsgt.end.getBitWidth());
-        *errs += !bult.isBot && (w != bult.bitWidth || w != bult.begin.getBitWidth() || w != bult.end.getBitWidth());
-        *errs += !bule.isBot && (w != bule.bitWidth || w != bule.begin.getBitWidth() || w != bule.end.getBitWidth());
-        *errs += !buge.isBot && (w != buge.bitWidth || w != buge.begin.getBitWidth() || w != buge.end.getBitWidth());
-        *errs += !bugt.isBot && (w != bugt.bitWidth || w != bugt.begin.getBitWidth() || w != bugt.end.getBitWidth());
+#define SANITY(x)                                                       \
+        *errs += x.state == SimpleInterval::NORMAL && (                 \
+            w != x.begin.getBitWidth() || w != x.end.getBitWidth() || x.begin == x.end + 1)
+
+        SANITY(add0); SANITY(add1); SANITY(add2); SANITY(sub0); SANITY(sub1);
+        SANITY(sub2); SANITY(mul0); SANITY(mul1); SANITY(mul2); SANITY(udiv);
+        SANITY(urem); SANITY(srem); SANITY(lub ); SANITY(glb );
+
+        SANITY(aeq ); SANITY(ane ); SANITY(aslt); SANITY(asle); SANITY(asge);
+        SANITY(asgt); SANITY(ault); SANITY(aule); SANITY(auge); SANITY(augt);
+        SANITY(beq ); SANITY(bne ); SANITY(bslt); SANITY(bsle); SANITY(bsge);
+        SANITY(bsgt); SANITY(bult); SANITY(bule); SANITY(buge); SANITY(bugt);
+
+#undef SANITY
         
         if (*errs) goto err;
 
@@ -226,18 +198,18 @@ void testSimpleDomain(u32 w, u32 iters, u64* errs) {
             *errs += !lub.contains(x) || !lub.contains(y);
             *errs += b.contains(x) && !glb.contains(x);
             *errs += a.contains(y) && !glb.contains(y);
-            *errs += !a.contains(y) && glb.contains(y); // It is not obvious that this condition has to be met. However, it is needed for narrowing.
+            *errs += !a.contains(y) && glb.contains(y);
 
-            *errs += (x==y && !aeq.contains(x)) || (!(x==y) && !beq.contains(x));
-            *errs += (x!=y && !ane.contains(x)) || (!(x!=y) && !bne.contains(x));
-            *errs += (x.ult(y) && !ault.contains(x)) || (!(x.ult(y)) && !bult.contains(x));
-            *errs += (x.ule(y) && !aule.contains(x)) || (!(x.ule(y)) && !bule.contains(x));
-            *errs += (x.uge(y) && !auge.contains(x)) || (!(x.uge(y)) && !buge.contains(x));
-            *errs += (x.ugt(y) && !augt.contains(x)) || (!(x.ugt(y)) && !bugt.contains(x));
-            *errs += (x.slt(y) && !aslt.contains(x)) || (!(x.slt(y)) && !bslt.contains(x));
-            *errs += (x.sle(y) && !asle.contains(x)) || (!(x.sle(y)) && !bsle.contains(x));
-            *errs += (x.sge(y) && !asge.contains(x)) || (!(x.sge(y)) && !bsge.contains(x));
-            *errs += (x.sgt(y) && !asgt.contains(x)) || (!(x.sgt(y)) && !bsgt.contains(x));
+            *errs += (x==y     && !aeq .contains(x)) || (y==x     && !beq.contains(y));
+            *errs += (x!=y     && !ane .contains(x)) || (y!=x     && !bne.contains(y));
+            *errs += (x.ult(y) && !ault.contains(x)) || (y.ult(x) && !bult.contains(y));
+            *errs += (x.ule(y) && !aule.contains(x)) || (y.ule(x) && !bule.contains(y));
+            *errs += (x.uge(y) && !auge.contains(x)) || (y.uge(x) && !buge.contains(y));
+            *errs += (x.ugt(y) && !augt.contains(x)) || (y.ugt(x) && !bugt.contains(y));
+            *errs += (x.slt(y) && !aslt.contains(x)) || (y.slt(x) && !bslt.contains(y));
+            *errs += (x.sle(y) && !asle.contains(x)) || (y.sle(x) && !bsle.contains(y));
+            *errs += (x.sge(y) && !asge.contains(x)) || (y.sge(x) && !bsge.contains(y));
+            *errs += (x.sgt(y) && !asgt.contains(x)) || (y.sgt(x) && !bsgt.contains(y));
 
             if (*errs) goto err;
         }
@@ -245,12 +217,13 @@ void testSimpleDomain(u32 w, u32 iters, u64* errs) {
         if (*errs) {
           err:
             std::fprintf(stderr, "Error in iteration %d, rand_state = 0x%lxull\n", (int)i, init_state);
+            std::fprintf(stderr, "To debug this, please update the initial value for rand_state in main() and set a watchpoint to the global variable error_count.\n");
             std::abort();
         }
     }
 }
 
-} // namespace pcpo
+} // end of namespace pcpo
 
 
 u64 error_count;
@@ -260,8 +233,8 @@ int main() {
 
     // Use this to reproduce a failing example more quickly. Simply insert the
     // last random hash the script outputs and the correct bitwidth.
-    //rand_state = 0x98275dd51679216dull;
-    //testSimpleDomain(17, iters, &error_count);
+    //rand_state = 0xe596fd2a27fe71c7ull;
+    //testSimpleDomain(16, iters, &error_count);
     
     while (true) {
         testSimpleDomain( 8, iters, &error_count);
