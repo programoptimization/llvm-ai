@@ -6,17 +6,17 @@ import os
 import sys
 
 parser = argparse.ArgumentParser(description='Setup the project. This creates the necessary symbolic links in the LLVM source code and adds the entries into the right CMakeList.txt. Also initialises the configuration for the run.py script.')
-parser.add_argument('--llvm-path', help='Path to the LLVM build directory, containing a file bin/opt.')
-parser.add_argument('--llvm-src', help='Path to the LLVM source directory, containing lib/Analysis ')
-parser.add_argument('--clang-path', help='Path to the clang build direcotry, containing a file bin/clang')
+parser.add_argument('--llvm-path', help='path to the LLVM build directory, containing a file bin/opt.')
+parser.add_argument('--llvm-src', help='path to the LLVM source directory, containing lib/Analysis ')
+parser.add_argument('--clang-path', help='path to the clang build direcotry, containing a file bin/clang')
 args = parser.parse_args()
 
 llvm_path = args.llvm_path
 llvm_src = args.llvm_src
 clang_path = args.clang_path
 
-project_dir = os.path.dirname(sys.argv[0])
-project_name = os.path.basename(project_dir)
+project_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+project_name = 'AbstractInterpretation'
 
 if llvm_path is None:
     # Try to guess the correct path
@@ -70,9 +70,9 @@ if not os.path.isfile(clang):
 
 # Create the symbolic link in the LLVM sources
 try:
-    link_target = llvm_dest + '/' + project_name
-    os.symlink(project_dir, link_target, target_is_directory=True)
-    print('Created symbolic link from\n  %s\nto\n  %s' % (project_dir, link_target))
+    link_name = llvm_dest + '/' + project_name
+    os.symlink(project_dir, link_name, target_is_directory=True)
+    print('Created symbolic link from %s to %s' % (link_name, project_dir))
 except FileExistsError:
     print('Symlink already exists')
 
