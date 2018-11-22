@@ -1,0 +1,61 @@
+#Mac specific
+*.DS_Store
+
+#Cmake Build folders
+/release
+/Release
+/RelWithDebInfo
+**/*~
+
+/debug
+/Debug
+
+build/
+/build
+/Build
+/.build
+
+# env config file
+.config
+
+# KDevelop
+/*.kdev4
+
+# CLion
+/.idea
+/cmake-build-debug
+
+# Visual Studio Code
+.vscode
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+
+# llvm
+*.ll
+*.bc
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints
