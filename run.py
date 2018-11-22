@@ -50,13 +50,13 @@ elif platform.system() == 'Windows':
     libeext = '.dll'
     print('Error: Windows is not supported. (You can try to delete this error and proceed at your own risk.')
     sys.exit(4)
-elif platform.system == 'Darwin':
+elif platform.system() == 'Darwin':
     libext = '.dylib'
 else:
     print('Error: Unknown platform ' + platform.system())
     sys.exit(4)
     
-pass_lib = llvm_path + "/lib/llvm-pain.so"
+pass_lib = llvm_path + "/lib/llvm-pain" + libext
 pass_name = "painpass"
 make_target = "llvm-pain"
 
