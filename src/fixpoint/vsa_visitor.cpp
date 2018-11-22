@@ -312,9 +312,9 @@ void VsaVisitor::visitCallInst(CallInst &I) {
   auto calleeCallHierarchy = getCurrentCallHierarchy().push(&I);
   auto &calleeBB = I.getCalledFunction()->front();
   auto &calleeProgramPoints = getProgramPoints(calleeCallHierarchy);
-  
+
   // get callee state or create new bottom state
-  auto &calleeState = calleeProgramPoints[&calleeBB]; 
+  auto &calleeState = calleeProgramPoints[&calleeBB];
   const bool visitedCalleeAlready = !calleeState.isBottom();
 
   const bool paramDomainChanged = mergeParamDomains(I, calleeState);
@@ -331,7 +331,7 @@ bool VsaVisitor::mergeParamDomains(CallInst &callInst, State &calleeState) {
   auto functionArgIt = callInst.arg_begin();
   auto calledFunction = callInst.getCalledFunction();
   auto functionParamIt = calledFunction->arg_begin();
-  
+
   for (; functionArgIt != callInst.arg_end() && functionParamIt != calledFunction->arg_end();
          functionArgIt++, functionParamIt++) {
 
@@ -348,42 +348,32 @@ bool VsaVisitor::mergeParamDomains(CallInst &callInst, State &calleeState) {
     calleeState.put(functionParam, newDomain);
     paramDomainChanged = true;
   }
-  
+
   assert(functionArgIt == callInst.arg_end() && functionParamIt == calledFunction->arg_end());
-  
+
   return paramDomainChanged;
 }
 
 void VsaVisitor::visitReturnInst(ReturnInst &I) {
   if (shouldSkipInstructions) { return; }
 
+  // get domain for return value before upsert
   auto returnDomain = newState.findAbstractValueOrBottom(I.getReturnValue());
 
   // updates global program points with the new state
   upsertNewState(I.getParent());
 
-  if (CallHierarchy::callStringDepth() != 0) {
-    auto &currentCallHierarchy = getCurrentCallHierarchy();
-    auto lastCallInstruction = currentCallHierarchy.getLastCallInstruction();
-
-    if (lastCallInstruction != nullptr) {
-      // shift the call hierarchy window to the left
-      auto lastCallHierarchy = getCurrentCallHierarchy().pop();
-      const bool returnDomainChanged = mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain);
-      if (returnDomainChanged) {
-        worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
-      }
-    }
-
-    pushSuccessors(I);
-    return;
+  if (CallHierarchy::callStringDepth() == 0) {
+    updateAllCallDomains(returnDomain, I.getFunction()->uses());
+  } else {
+    updateLastCallDomain(returnDomain);
   }
 
-  // if call string depth is zero
+  pushSuccessors(I);
+}
 
-  auto currentFunction = I.getFunction();
-  auto functionUses = currentFunction->uses();
-
+void VsaVisitor::updateAllCallDomains(const shared_ptr <AbstractDomain> &returnDomain,
+                                      const iterator_range<Value::use_iterator> &functionUses) {
   for (auto &use : functionUses) {
     CallSite callSite(use.getUser());
     Instruction *call = callSite.getInstruction();
@@ -401,15 +391,32 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
       continue;
     }
 
-    auto callInst = llvm::cast<CallInst>(call);
+    auto callInst = cast<CallInst>(call);
+    const bool returnDomainChanged =
+        mergeReturnDomains(*callInst, callerHierarchy, returnDomain);
 
-    const bool returnDomainChanged = mergeReturnDomains(*callInst, callerHierarchy, returnDomain);
     if (returnDomainChanged) {
       worklist.push({callerHierarchy, callerBB});
     }
   }
+}
+void VsaVisitor::updateLastCallDomain(const shared_ptr <AbstractDomain> &returnDomain) {
+  auto &currentCallHierarchy = getCurrentCallHierarchy();
+  auto lastCallInstruction = currentCallHierarchy.getLastCallInstruction();
 
-  pushSuccessors(I);
+  if (!lastCallInstruction) {
+    return;
+  }
+
+  // shift the call hierarchy window to the left
+  auto lastCallHierarchy = getCurrentCallHierarchy().pop();
+
+  const bool returnDomainChanged =
+      mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain);
+
+  if (returnDomainChanged) {
+    worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
+  }
 }
 
 bool VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
