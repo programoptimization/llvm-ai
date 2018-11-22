@@ -5,6 +5,10 @@ import argparse
 import os
 import sys
 
+if sys.version_info[0] < 3:
+    print("Error: This script only supports Python 3")
+    sys.exit(5)
+
 parser = argparse.ArgumentParser(description='Setup the project. This creates the necessary symbolic links in the LLVM source code and adds the entries into the right CMakeList.txt. Also initialises the configuration for the run.py script.')
 parser.add_argument('--llvm-path', help='path to the LLVM build directory, containing a file bin/opt.')
 parser.add_argument('--llvm-src', help='path to the LLVM source directory, containing lib/Analysis ')

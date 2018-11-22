@@ -2,11 +2,15 @@
 # coding: utf-8
 
 import argparse
-import os.path
 import os
-import subprocess
+import platform
 import shlex
+import subprocess
 import sys
+
+if sys.version_info[0] < 3:
+    print("Error: This script only supports Python 3")
+    sys.exit(5)
 
 project_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 os.chdir(project_dir)
@@ -28,7 +32,7 @@ clang = clang_path + '/bin/clang'
 make = 'make'
 gdb = 'gdb'
 
-CXX = os.environ.get('CXX', 'g++')
+CXX = os.environ.get('CXX', 'c++')
 
 if not os.path.isfile(opt):
     print('Error: no opt exists at ' + opt + ' (maybe you forgot to build LLVM?)')
@@ -40,6 +44,18 @@ if not os.path.isfile(clang):
     print('Error: no clang exists at ' + clang)
     sys.exit(2)
 
+if platform.system() == 'Linux':
+    libeext = '.so'
+elif platform.system() == 'Windows':
+    libeext = '.dll'
+    print('Error: Windows is not supported. (You can try to delete this error and proceed at your own risk.')
+    sys.exit(4)
+elif platform.system == 'Darwin':
+    libext = '.dylib'
+else:
+    print('Error: Unknown platform ' + platform.system())
+    sys.exit(4)
+    
 pass_lib = llvm_path + "/lib/llvm-pain.so"
 pass_name = "painpass"
 make_target = "llvm-pain"
@@ -130,7 +146,7 @@ def main():
         if args.view_cfg:
             args_add.append('--view-cfg')
 
-        base_args = ['-load', pass_lib, '-'+pass_name, '-S', *args_add, '-o', '/dev/null', f_optll]
+        base_args = ['-load', pass_lib, '-'+pass_name, '-S'] + args_add + ['-o', '/dev/null', f_optll]
         if not args.do_gdb:
             run([opt] + base_args, redirect=redir)
         else:
@@ -157,8 +173,8 @@ def main():
         libs     = subprocess.run([llvm_config, '--libs', 'analysis'], stdout=subprocess.PIPE).stdout.decode('ascii').split()
         libs += '-lz -lrt -ldl -ltinfo -lpthread -lm'.split()
         
-        run([cxx, 'test/simple_interval_test.cpp', '-Isrc', '-fmax-errors=2', *cxxflags,
-             '-o', 'build/SimpleIntervalTest', *ldflags, pass_lib, *libs])
+        run([cxx, 'test/simple_interval_test.cpp', '-Isrc', '-fmax-errors=2'] + cxxflags
+             + ['-o', 'build/SimpleIntervalTest'] + ldflags + [pass_lib] + libs)
 
         try:
             run(['build/SimpleIntervalTest'])
