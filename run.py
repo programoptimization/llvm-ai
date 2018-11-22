@@ -174,10 +174,13 @@ def main():
         cxxflags = subprocess.run([llvm_config, '--cxxflags'], stdout=subprocess.PIPE).stdout.decode('ascii').split()
         ldflags  = subprocess.run([llvm_config, '--ldflags' ], stdout=subprocess.PIPE).stdout.decode('ascii').split()
         libs     = subprocess.run([llvm_config, '--libs', 'analysis'], stdout=subprocess.PIPE).stdout.decode('ascii').split()
-        libs += '-lz -lrt -ldl -ltinfo -lpthread -lm'.split()
+        if platform.system() == 'Darwin':
+            libs += '-lz -ldl -lpthread -lm -lcurses'.split()
+        else:
+            libs += '-lz -lrt -ldl -ltinfo -lpthread -lm'.split()
         
-        run([cxx, 'test/simple_interval_test.cpp', '-Isrc', '-fmax-errors=2'] + cxxflags
-             + ['-o', 'build/SimpleIntervalTest'] + ldflags + [pass_lib] + libs)
+        run([cxx, 'test/simple_interval_test.cpp', 'src/simple_interval.cpp', '-Isrc', '-fmax-errors=2'] + cxxflags
+             + ['-o', 'build/SimpleIntervalTest'] + ldflags + libs)
 
         try:
             run(['build/SimpleIntervalTest'])
