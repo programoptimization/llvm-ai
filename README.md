@@ -1,90 +1,51 @@
 # Program Optimization Lab 2018
 
-Aim of the [Program Optimization Lab 2018](http://www2.in.tum.de/hp/Main?nid=366) 
-is to explore the LLVM opt tool and extend it with an advanced Value-Set Analysis
-according to [Reps et al.](http://research.cs.wisc.edu/wpis/papers/pepm06.invited.pdf).
+Implements an LLVM analysis pass using abstract interpretation.
 
-A PDF version of the presentation we gave at the end of the course is available [here](https://github.com/peterrum/po-lab-2018/raw/master/documentation/document.pdf).
+## Build
 
-## Authors (in alphabetic order)
+Get the LLVM source code from [here](http://releases.llvm.org/download.html). Then get clang as well, into `llvm/tools`. Create a build directory somewhere, initialise CMake, and build. For example
+
+    # From your llvm-7.0.0-src, or whatever the version is now
+    cd ..
+    mkdir llvm_build
+    cd llvm_build
+    cmake ../llvm-?.?.?-src -DLLVM_TARGETS_TO_BUILD=X86
+    make -j2
+    
+The parallel make may run out of memory at the end. You can restart it sequentially by issuing another `make`.
+
+Now we can initalise the repository.
+
+    cd ..
+    git clone ssh://git@github.com/PUT/THE/CORRECT/REPOSITORY/IN/HERE.git
+    cd PUT/THE/CORRECT/REPOSITORY/IN/HERE
+    python3 init_repo.py
+    
+The script should be able to find your LLVM and clang. If it is not, you need to specify them by hand.
+
+At last, let us compile and run the samples.
+
+    python3 run.py --make
+    
+If there are errors regarding missing header files, you probably need to rebuild llvm.
+
+## Useful things
+
+The `run.py` script contains everything, up to and including the kitchen sink. It can run the samples, build, run the debugger, as well as build and run the tests. Just read its help message to get all the good stuff. I want to highlight the `-n` option, which causes it to just print out the commands it would run. This is great to just copy-paste the relevant ones into your terminal (or IDE).
+
+## Authors
+
+* TODO
+* Philipp Czerner ([github](https://github.com/suyjuris/), [mail](mailto:philipp.czerner@nicze.de))
+* TODO
+* TODO
+
+### Ancient authors of the old code this is based on (of which none is left, but you can still see the commits)
 
 * Julian Erhard
 * Jakob Gottfriedsen
 * Peter Munch
 * Alexander Roschlaub
 * Michael B. Schwarz
-
-## Installation
-
-Clone the project into the following folder:
-```bash
-cd llvm/lib/Transforms
-git clone git@github.com:peterrum/po-lab-2018.git ValueSetAnalysis
-```
-
-and add the following line to the `CMakeLists.txt`-file:
-```bash
-add_subdirectory(ValueSetAnalysis)
-add_subdirectory(ValueSetAnalysis/tutorial)
-add_subdirectory(ValueSetAnalysis/benchmark)
-```
-
-Finally run `make` and/or `make install` again.
-
-## How to ...
-
-### ... view IR
-
-Recompile and view output with your favorite text editor: 
-```bash
-clang -Os -S -emit-llvm hello.c -o hello.ll
-```
-
-In the case you have already a .bc-file run the following to get the .ll-file:
-```bash
-llvm-dis hello-opt.bc
-```
-
-### ... use opt
-```bash
-clang -Os -S -emit-llvm hello.c -o hello.ll
-```
-
-```bash
-clang -O3 -emit-llvm hello.c -c -o hello.bc
-opt -load llvm/lib/llvm-vsa.so -vsapass < hello.bc > /dev/null
-```
-
-### ... useful workflow
-
-```bash
-clang -O0 -emit-llvm hello.c -Xclang -disable-O0-optnone -c -o hello.bc
-opt -mem2reg < hello.bc > hello-opt.bc
-opt -load llvm/lib/llvm-vsa.so -vsapass < hello.bc > /dev/null
-```
-
-## Useful classes and methods in LLVM
-
-* Write output: errs() << "Hello World!\n"
-
-### llvm::Module
-* Iterator over all functions
-
-### llvm::Function
-* Iterator over all basic blocks
-* getName()
-
-### llvm::BasicBlock
-* Iterator over all instructions
-
-### llvm::Instruction
-* getOpcodeName()
-* getValueID()
-* users()
-
-### llvm::InstVisitor<U, V>
-* V visit(...)
-
-### llvm::APInt
-* Arbitrary precision integer
 
