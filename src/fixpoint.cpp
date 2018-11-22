@@ -23,13 +23,6 @@ int debug_level = DEBUG_LEVEL; // from global.hpp
 
 class AbstractStateDummy {
 public:
-    enum MergeOperation: int {
-        INVALID,
-        SMALL_UPPER_BOUND,
-        WIDEN,
-        NARROW
-    };
-
     // This has to initialise the state to bottom.
     AbstractStateDummy() = default;
 
