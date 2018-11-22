@@ -126,14 +126,17 @@ private:
                           CallHierarchy &lastCallHierarchy,
                           std::shared_ptr<AbstractDomain> returnDomain);
 
+  /// finds all call instructions that call the given function.
+  std::vector<CallInst *> findAllCallInstTo(llvm::Function *calledFunction);
+
   /// merges new return domain with call-site domain,
   /// queues caller-block if there are changes in domain.
-  void updateLastCallDomain(const shared_ptr <AbstractDomain> &returnDomain);
+  void updateLastCallDomain(const shared_ptr<AbstractDomain> &returnDomain);
 
   /// merges new return domain with all call-site domains from uses,
   /// queues caller-blocks if there are changes in domain.
-  void updateAllCallDomains(const shared_ptr <AbstractDomain> &returnDomain,
-                            const iterator_range<Value::use_iterator> &functionUses);
+  void updateAllCallDomains(const shared_ptr<AbstractDomain> &returnDomain,
+                            const std::vector<CallInst *> &callInsts);
 
   /// push directly reachable basic blocks onto worklist
   void pushSuccessors(TerminatorInst &I);

@@ -364,7 +364,7 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   upsertNewState(I.getParent());
 
   if (CallHierarchy::callStringDepth() == 0) {
-    updateAllCallDomains(returnDomain, I.getFunction()->uses());
+    updateAllCallDomains(returnDomain, findAllCallInstTo(I.getFunction()));
   } else {
     updateLastCallDomain(returnDomain);
   }
@@ -372,18 +372,27 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   pushSuccessors(I);
 }
 
-void VsaVisitor::updateAllCallDomains(const shared_ptr <AbstractDomain> &returnDomain,
-                                      const iterator_range<Value::use_iterator> &functionUses) {
-  for (auto &use : functionUses) {
+std::vector<CallInst *> VsaVisitor::findAllCallInstTo(llvm::Function *calledFunction) {
+  std::vector<CallInst *> callInsts;
+  for (auto &use : calledFunction->uses()) {
     CallSite callSite(use.getUser());
     Instruction *call = callSite.getInstruction();
 
-    if (!call || !callSite.isCallee(&use) || call->use_empty()) {
-      continue;
+    if (call && callSite.isCallee(&use) && !call->use_empty()) {
+      callInsts.push_back(cast<CallInst>(call));
     }
+  }
 
-    auto callerBB = call->getParent();
+  return callInsts;
+}
 
+void VsaVisitor::updateAllCallDomains(
+    const shared_ptr<AbstractDomain> &returnDomain,
+    const std::vector<CallInst *> &callInsts) {
+
+  for (auto &callInst : callInsts) {
+
+    auto callerBB = callInst->getParent();
     CallHierarchy callerHierarchy{callerBB->getParent()};
 
     // Prevents us from visiting not marked basic blocks.
@@ -391,7 +400,6 @@ void VsaVisitor::updateAllCallDomains(const shared_ptr <AbstractDomain> &returnD
       continue;
     }
 
-    auto callInst = cast<CallInst>(call);
     const bool returnDomainChanged =
         mergeReturnDomains(*callInst, callerHierarchy, returnDomain);
 
@@ -400,7 +408,10 @@ void VsaVisitor::updateAllCallDomains(const shared_ptr <AbstractDomain> &returnD
     }
   }
 }
-void VsaVisitor::updateLastCallDomain(const shared_ptr <AbstractDomain> &returnDomain) {
+
+void VsaVisitor::updateLastCallDomain(
+    const shared_ptr<AbstractDomain> &returnDomain) {
+
   auto &currentCallHierarchy = getCurrentCallHierarchy();
   auto lastCallInstruction = currentCallHierarchy.getLastCallInstruction();
 
