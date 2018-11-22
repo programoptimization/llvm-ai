@@ -29,7 +29,7 @@ opt = llvm_path + '/bin/opt'
 llvm_dis = llvm_path + '/bin/llvm-dis'
 llvm_config = llvm_path + '/bin/llvm-config'
 clang = clang_path + '/bin/clang'
-make = 'make'
+cmake = 'cmake'
 gdb = 'gdb'
 
 CXX = os.environ.get('CXX', 'c++')
@@ -51,16 +51,16 @@ elif platform.system() == 'Windows':
     print('Error: Windows is not supported. (You can try to delete this error and proceed at your own risk.')
     sys.exit(4)
 elif platform.system() == 'Darwin':
-    libext = '.dylib'
+    libeext = '.dylib'
 else:
     print('Error: Unknown platform ' + platform.system())
     sys.exit(4)
     
-pass_lib = llvm_path + "/lib/llvm-pain" + libext
+pass_lib = llvm_path + "/lib/llvm-pain" + libeext
 pass_name = "painpass"
 make_target = "llvm-pain"
 
-samples = project_dir + '/samples/'
+samples = project_dir + '/samples'
 
 def main():
     def run(arg, cwd=None, redirect=None):
@@ -120,8 +120,13 @@ def main():
 
     if args.do_make:
         print("Building %s..." % (make_target,))
-        run([make, make_target], llvm_path)
+        run([cmake, '--build', llvm_path, '--target', make_target])
 
+    if not os.path.isfile(pass_lib):
+        print('Error: Could not find shared library ' + pass_lib)
+        print('Please build the project (for example by running this script with the option --make')
+        sys.exit(7)
+        
     os.makedirs('output', exist_ok=True)
 
     for fname in files:

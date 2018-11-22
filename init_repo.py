@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import subprocess
 import sys
 
 if sys.version_info[0] < 3:
@@ -21,6 +22,8 @@ clang_path = args.clang_path
 
 project_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 project_name = 'AbstractInterpretation'
+
+cmake = 'cmake'
 
 if llvm_path is None:
     # Try to guess the correct path
@@ -101,6 +104,10 @@ if needs_changes:
     cmake_file.write('\n' + line_to_insert)
     cmake_file.close()
     print('CMakeLists.txt modified, at %s' % (cmake_file_name,))
+    
+    # Also regenerate the CMake cache
+    print('Rebuilding cmake cache')
+    subprocess.run([cmake, llvm_path], check=True)
 else:
     print('CMakeLists.txt is fine')
 
