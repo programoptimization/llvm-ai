@@ -20,7 +20,7 @@ Now we can initalise the repository.
     cd ..
     git clone ssh://git@github.com/PUT/THE/CORRECT/REPOSITORY/IN/HERE.git
     cd PUT/THE/CORRECT/REPOSITORY/IN/HERE
-    python3 init_repo.py
+    python3 init.py
     
 The script should be able to find your LLVM and clang. If it is not, you need to specify them by hand.
 

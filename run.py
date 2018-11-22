@@ -16,7 +16,7 @@ project_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
 os.chdir(project_dir)
 
 if not os.path.isfile(".config"):
-    print("No config file was found. Pleas run init_repo.py first!")
+    print("No config file was found. Please run init.py first!")
     sys.exit(-1)
 
 config_file = open(".config", "r")
