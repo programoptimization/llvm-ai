@@ -1,0 +1,9 @@
+- "foo/0:0/foo":
+  - returns:
+    - "[]_32"
+- "main":
+  - returns:
+    - "[]_32"
+- "main/0:0/foo":
+  - returns:
+    - "[]_32"

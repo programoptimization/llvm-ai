@@ -1,0 +1,8 @@
+- "foo":
+  - arguments:
+    - 0: "T_32"
+  - returns:
+    - "[]_32"
+- "main":
+  - returns:
+    - "[]_32"

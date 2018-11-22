@@ -1,0 +1,6 @@
+- "foo":
+  - returns:
+    - "[]_32"
+- "main":
+  - returns:
+    - "[]_32"
