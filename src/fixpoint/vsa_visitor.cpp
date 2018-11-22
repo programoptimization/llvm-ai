@@ -354,6 +354,21 @@ bool VsaVisitor::mergeParamDomains(CallInst &callInst, State &calleeState) {
   return paramDomainChanged;
 }
 
+/// finds all call instructions that call the given function.
+static std::vector<CallInst *> findAllCallInstTo(llvm::Function *calledFunction) {
+  std::vector<CallInst *> callInsts;
+  for (auto &use : calledFunction->uses()) {
+    CallSite callSite(use.getUser());
+    Instruction *call = callSite.getInstruction();
+
+    if (call && callSite.isCallee(&use) && !call->use_empty()) {
+      callInsts.push_back(cast<CallInst>(call));
+    }
+  }
+
+  return callInsts;
+}
+
 void VsaVisitor::visitReturnInst(ReturnInst &I) {
   if (shouldSkipInstructions) { return; }
 
@@ -370,20 +385,6 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
   }
 
   pushSuccessors(I);
-}
-
-std::vector<CallInst *> VsaVisitor::findAllCallInstTo(llvm::Function *calledFunction) {
-  std::vector<CallInst *> callInsts;
-  for (auto &use : calledFunction->uses()) {
-    CallSite callSite(use.getUser());
-    Instruction *call = callSite.getInstruction();
-
-    if (call && callSite.isCallee(&use) && !call->use_empty()) {
-      callInsts.push_back(cast<CallInst>(call));
-    }
-  }
-
-  return callInsts;
 }
 
 void VsaVisitor::updateAllCallDomains(

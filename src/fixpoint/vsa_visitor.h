@@ -126,9 +126,6 @@ private:
                           CallHierarchy &lastCallHierarchy,
                           std::shared_ptr<AbstractDomain> returnDomain);
 
-  /// finds all call instructions that call the given function.
-  std::vector<CallInst *> findAllCallInstTo(llvm::Function *calledFunction);
-
   /// merges new return domain with call-site domain,
   /// queues caller-block if there are changes in domain.
   void updateLastCallDomain(const shared_ptr<AbstractDomain> &returnDomain);
