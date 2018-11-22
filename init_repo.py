@@ -40,6 +40,8 @@ if llvm_src is None:
     while os.path.dirname(d) != d:
         d = os.path.dirname(d)
         for i in os.listdir(d):
+            if os.path.isfile(d + '/' + i + '/cmake_install.cmake'):
+                continue
             if os.path.isdir(d + '/' + i + '/lib/Analysis'):
                 llvm_src = d + '/' + i
                 print('Auto-detecting llvm-src as ' + llvm_src)
