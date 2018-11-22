@@ -369,8 +369,10 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
     if (lastCallInstruction != nullptr) {
       // shift the call hierarchy window to the left
       auto lastCallHierarchy = getCurrentCallHierarchy().pop();
-      mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain);
-      worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
+      const bool returnDomainChanged = mergeReturnDomains(*lastCallInstruction, lastCallHierarchy, returnDomain);
+      if (returnDomainChanged) {
+        worklist.push({lastCallHierarchy, lastCallInstruction->getParent()});
+      }
     }
 
     pushSuccessors(I);
