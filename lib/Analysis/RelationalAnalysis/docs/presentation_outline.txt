@@ -1,0 +1,23 @@
+Introduction/Paper outline/Task:
+@Vanessa
+- implement pass in llvm framework for relational analysis
+- Non functional requirements:
+  * Code has to be maintainable/extendable (through abstraction)
+  * Algorithm runtime has to be short
+
+- EQ Domain stores invariants about vars of the form (a = b, c = 2)
+  -> transform funcs in EQ Domain
+    [x <- ?]#: ...
+    [x <- c]# (a=b .. a=2 -> a=b=2)
+    [x <- y]#
+@Dominik
+- LUB
+- Key features of our code
+
+@Philipp
+Our Solution - Code structure
+- UML overview
+- Core worklist loop idea (.dot diagram)
+
+@Peter
+Demo
