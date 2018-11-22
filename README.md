@@ -36,10 +36,10 @@ The `run.py` script contains everything, up to and including the kitchen sink. I
 
 ## Authors
 
-* TODO
-* Philipp Czerner ([github](https://github.com/suyjuris/), [mail](mailto:philipp.czerner@nicze.de))
 * Ramona Brückl
-* TODO
+* Philipp Czerner ([github](https://github.com/suyjuris/), [mail](mailto:philipp.czerner@nicze.de))
+* Tim Gymnich
+* Thomas Frank
 
 ### Ancient authors of the old code this is based on (of which none is left, but you can still see the commits)
 
