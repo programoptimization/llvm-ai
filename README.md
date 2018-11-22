@@ -41,8 +41,7 @@ The `run.py` script contains everything, up to and including the kitchen sink. I
 * Tim Gymnich
 * Thomas Frank
 
-### Ancient authors of the old code this is based on (of which none is left, but you can still see the commits)
-
+### Authors of previous semesters
 * Julian Erhard
 * Jakob Gottfriedsen
 * Peter Munch
