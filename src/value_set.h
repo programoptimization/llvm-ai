@@ -310,13 +310,13 @@ public:
     // normalises our value. Returns whether this changed our value (i.e. we are now bottom).
     bool checkForBottom(int indent = 0) {
         if (isBottom) return false;
-        
+
         for (auto const& i: values) {
             if (i.second == AbstractDomain {}) {
+                dbgs(3).indent(indent) << "Variable %" << i.first->getName() << " is bottom, so the state is as well.\n";
+                
                 values.clear();
                 isBottom = true;
-
-                dbgs(3).indent(indent) << "Variable %" << i.first->getName() << " is bottom, so the state is as well.\n";
                 
                 return true;
             }
