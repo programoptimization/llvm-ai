@@ -175,7 +175,7 @@ def main():
         ldflags  = subprocess.run([llvm_config, '--ldflags' ], stdout=subprocess.PIPE).stdout.decode('ascii').split()
         libs     = subprocess.run([llvm_config, '--libs', 'analysis'], stdout=subprocess.PIPE).stdout.decode('ascii').split()
         if platform.system() == 'Darwin':
-            libs += '-lz -ldl -lpthred -lm'.split()
+            libs += '-lz -ldl -lpthread -lm -lcurses'.split()
         else:
             libs += '-lz -lrt -ldl -ltinfo -lpthread -lm'.split()
         
