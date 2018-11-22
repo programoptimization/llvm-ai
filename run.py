@@ -77,8 +77,6 @@ def main():
                 if redirect:
                     f.close()
                     print(open(redirect, 'r').read())
-                else:
-                    print(e.stderr)
                 sys.exit(3)
         else:
             cmd = ' '.join(shlex.quote(i) for i in arg)
