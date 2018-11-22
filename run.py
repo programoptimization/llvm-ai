@@ -31,6 +31,7 @@ llvm_config = llvm_path + '/bin/llvm-config'
 clang = clang_path + '/bin/clang'
 cmake = 'cmake'
 gdb = 'gdb'
+lldb = 'lldb'
 
 CXX = os.environ.get('CXX', 'c++')
 
@@ -94,7 +95,8 @@ def main():
     parser.add_argument("--cfg", dest='view_cfg', help="show llvm control flow graph", action="store_true")
     parser.add_argument("--make", dest='do_make', help="call make before executing the script", action="store_true")
     parser.add_argument("--only-make", dest='do_make_only', help="only call make, do not execute any samples", action="store_true")
-    parser.add_argument("--gdb", dest='do_gdb', help="open the debugger for the specified file", action="store_true")
+    parser.add_argument("--gdb", dest='do_gdb', help="open the gdb debugger for the specified file", action="store_true") # might not work with mac OS try lldb
+    parser.add_argument("--lldb", dest='do_lldb', help="open the lldb debugger for the specified file", action="store_true")
     parser.add_argument("--run-test", dest='run_test', help="run the test for SimpleInterval", action="store_true")
     parser.add_argument("--use-cxx", metavar='path', dest='use_cxx', help="use as c++ compiler when building the test")
     args = parser.parse_args()
@@ -157,6 +159,12 @@ def main():
             if not args.only_print:
                 print('In a moment, gdb is going to read in the symbols of opt. As you might notice, that takes a long time. So, here is a tip: Just restart the program using r (no need to specify arguments). Even if you rebuild the project, that is in a shared library and will thus be reloaded the next time you start the program.')
             run([gdb, '-q',  opt, '-ex', 'r ' + ' '.join(map(shlex.quote, base_args))])
+
+        if not args.do_lldb:
+            run([opt] + base_args, redirect=redir)
+        else:
+            break_at = 'pcpo::AbstractInterpretationPass::runOnModule(llvm::Module&)'
+            run([lldb, opt, '--', ' '.join(map(shlex.quote, base_args))])
 
     if args.run_test:
         if not os.path.isfile(llvm_config):
