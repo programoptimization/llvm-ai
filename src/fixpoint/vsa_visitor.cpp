@@ -400,15 +400,17 @@ void VsaVisitor::visitReturnInst(ReturnInst &I) {
     }
 
     auto callInst = llvm::cast<CallInst>(call);
-    mergeReturnDomains(*callInst, callerHierarchy, returnDomain);
 
-    worklist.push({callerHierarchy, callerBB});
+    const bool returnDomainChanged = mergeReturnDomains(*callInst, callerHierarchy, returnDomain);
+    if (returnDomainChanged) {
+      worklist.push({callerHierarchy, callerBB});
+    }
   }
 
   pushSuccessors(I);
 }
 
-void VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
+bool VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
                                     CallHierarchy &lastCallHierarchy,
                                     std::shared_ptr<AbstractDomain> returnDomain) {
 
@@ -417,6 +419,9 @@ void VsaVisitor::mergeReturnDomains(CallInst &lastCallInst,
   auto newCallInstDomain = oldCallInstDomain->leastUpperBound(*returnDomain);
 
   lastCallState.put(lastCallInst, newCallInstDomain);
+
+  bool returnDomainChanged = !(*newCallInstDomain <= *oldCallInstDomain);
+  return returnDomainChanged;
 }
 
 void VsaVisitor::visitAdd(BinaryOperator &I) {

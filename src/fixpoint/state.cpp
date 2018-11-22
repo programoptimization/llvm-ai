@@ -11,7 +11,7 @@ bool State::put(Value &v, std::shared_ptr<AbstractDomain> ad) {
 
   if (ad->isBottom()) {
     DEBUG_OUTPUT("State::put: set to bottom because of " << v.getName());
-    ad->printOut();
+//    ad->printOut();
     bottom = true;
     return true;
   }

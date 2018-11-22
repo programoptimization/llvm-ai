@@ -120,8 +120,9 @@ private:
   /// merges it with the old one.
   void upsertNewState(BasicBlock *currentBB);
 
-  /// merges return domain with call-site domain
-  void mergeReturnDomains(CallInst &lastCallInst,
+  /// merges return domain with call-site domain.
+  /// returns true if return domain has changed.
+  bool mergeReturnDomains(CallInst &lastCallInst,
                           CallHierarchy &lastCallHierarchy,
                           std::shared_ptr<AbstractDomain> returnDomain);
 
